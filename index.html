@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>二進制拼圖-紅藍</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="js/main.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1 id="title">二進制拼圖-紅藍</h1>
+            <div class="header-divider"></div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="language-select">Language:</label>
+                <select id="language-select">
+                    <option value="zh-tw">繁體中文</option>
+                    <option value="en">English</option>
+                    <option value="zh-cn">简体中文</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="puzzle-size" id="label-size">大小：</label>
+                <select id="puzzle-size">
+                    <option value="4">4x4</option>
+                    <option value="6" selected>6x6</option>
+                    <option value="8">8x8</option>
+                    <option value="10">10x10</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="puzzle-difficulty" id="label-difficulty">難度：</label>
+                <select id="puzzle-difficulty">
+                    <option value="easy" id="opt-easy">簡單</option>
+                    <option value="medium" selected id="opt-medium">中等</option>
+                    <option value="hard" id="opt-hard">困難</option>
+                </select>
+            </div>
+
+            <button id="new-game-btn" class="btn btn-green">新遊戲</button>
+            <button id="reset-btn" class="btn btn-gray">重置</button>
+        </div>
+
+        <!-- Game Grid -->
+        <div id="game-grid" class="game-grid"></div>
+
+        <!-- Status Message -->
+        <div id="status-message" class="status-message hidden"></div>
+
+        <!-- Hints Section -->
+        <div id="hints-container" class="hints-container hidden"></div>
+
+        <!-- Rules Section -->
+        <div class="rules-section">
+            <h2 id="rules-title">二進制拼圖玩法說明：</h2>
+            <div class="rules-divider"></div>
+            <ul id="rules-list" class="rules-list">
+                <li>將每個空格填入紅色或藍色圓圈。</li>
+                <li>任何行或列中，<strong>不能有超過兩個相同顏色的相鄰圓圈</strong>。</li>
+                <li>每個行和每個列必須包含<strong>相同數量的紅色和藍色圓圈</strong>（此規則僅適用於偶數大小的網格，如4x4、6x6等，並且僅當該行/列完全填滿時）。</li>
+                <li>所有行必須是<strong>唯一</strong>的。沒有兩行可以有完全相同的圓圈模式。</li>
+                <li>所有列必須是<strong>唯一</strong>的。沒有兩列可以有完全相同的圓圈模式。</li>
+            </ul>
+            <div class="instructions-box">
+                <p id="instructions">點擊空格以切換其狀態：空白 → 紅色 → 藍色 → 空白。帶有灰色背景的方塊是初始拼圖的一部分，無法更改。<span class="highlight">高亮區域</span> 表示規則違規。</p>
+            </div>
+        </div>
+    </div>
+
+
+</body>
+
+</html>

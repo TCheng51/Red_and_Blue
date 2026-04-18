@@ -1,0 +1,399 @@
+:root {
+    /* Fantasy Dark Colors */
+    --dark1: #0a0e27;
+    --dark2: #1a1f3a;
+    --dark3: #2a2f4a;
+    --dark4: #3a3f5a;
+    --dark5: #4a4f5e;
+
+    /* Gold/Brass Colors */
+    --gold1: #ffd700;
+    --gold2: #daa520;
+    --gold3: #b8860b;
+
+    /* Deep Blue/Purple */
+    --purple1: #6b5b95;
+    --purple2: #4a3f63;
+    --purple3: #2e1a47;
+
+    /* Crimson Red */
+    --crimson1: #cc0000;
+    --crimson2: #990000;
+    --crimson3: #660000;
+
+    /* Royal Blue */
+    --royal1: #4169e1;
+    --royal2: #1e40af;
+    --royal3: #0c2454;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Cantarell', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, var(--dark1) 0%, var(--dark2) 50%, var(--purple3) 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: var(--gold1);
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--dark2);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--gold2);
+    border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--gold1);
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Header */
+.header {
+    background: linear-gradient(135deg, var(--dark2) 0%, var(--dark3) 100%);
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 215, 0, 0.1);
+    padding: 30px 20px;
+    margin-bottom: 30px;
+    text-align: center;
+    border: 2px solid var(--gold2);
+}
+
+.header h1 {
+    font-size: 36px;
+    font-weight: bold;
+    color: var(--gold1);
+    margin-bottom: 15px;
+    text-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+}
+
+.header-divider {
+    width: 96px;
+    height: 4px;
+    margin: 0 auto;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--crimson1) 0%, var(--royal1) 100%);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+/* Controls */
+.controls {
+    background: linear-gradient(135deg, var(--dark2) 0%, var(--dark3) 100%);
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+    padding: 20px;
+    margin-bottom: 30px;
+    border: 2px solid var(--gold2);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-group label {
+    font-weight: 500;
+    color: var(--gold1);
+    white-space: nowrap;
+}
+
+.control-group select {
+    padding: 8px 12px;
+    border: 1px solid var(--gold2);
+    border-radius: 6px;
+    background-color: var(--dark3);
+    color: var(--gold1);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.control-group select:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.control-group select:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--royal1);
+}
+
+/* Buttons */
+.btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active {
+    transform: scale(0.98);
+}
+
+.btn-green {
+    background: linear-gradient(135deg, var(--gold1) 0%, var(--gold2) 100%);
+    color: var(--dark1);
+}
+
+.btn-green:hover {
+    background: linear-gradient(135deg, var(--gold2) 0%, var(--gold3) 100%);
+}
+
+.btn-gray {
+    background: linear-gradient(135deg, var(--dark4) 0%, var(--dark5) 100%);
+}
+
+.btn-gray:hover {
+    background: linear-gradient(135deg, var(--dark5) 0%, var(--gold2) 100%);
+}
+
+/* Status Message */
+.status-message {
+    margin: 20px 0;
+    padding: 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 16px;
+    text-align: center;
+    color: white;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 2px solid;
+}
+
+.status-message.hidden {
+    display: none;
+}
+
+.status-message.success {
+    background: linear-gradient(135deg, var(--gold1) 0%, var(--gold2) 100%);
+    border-color: var(--gold3);
+    color: var(--dark1);
+}
+
+.status-message.warning {
+    background: linear-gradient(135deg, var(--crimson1) 0%, var(--crimson2) 100%);
+    border-color: var(--crimson3);
+}
+
+/* Game Grid */
+.game-grid {
+    display: grid;
+    gap: 2px;
+    padding: 10px;
+    background-color: var(--dark4);
+    border-radius: 6px;
+    border: 2px solid var(--gold2);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5), inset 0 0 20px rgba(255, 215, 0, 0.05);
+    margin: 0 auto 20px auto;
+    width: fit-content;
+}
+
+.cell {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--dark2);
+    border: 1px solid var(--gold3);
+    cursor: pointer;
+    border-radius: 2px;
+    transition: all 0.15s ease;
+}
+
+.cell:hover:not(.locked) {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    transform: scale(1.02);
+}
+
+.cell.locked {
+    background-color: var(--dark3);
+    cursor: not-allowed;
+}
+
+.cell.violation {
+    background-color: var(--crimson3);
+    border: 2px solid var(--crimson1);
+}
+
+.cell.violation.locked {
+    background-color: var(--crimson3);
+}
+
+.circle {
+    width: 32px;
+    height: 32px;
+    position: relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 0 5px rgba(255, 255, 255, 0.1);
+    /* Shield shape with clip-path */
+    clip-path: polygon(50% 0%, 100% 25%, 100% 65%, 50% 100%, 0% 65%, 0% 25%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.circle.red {
+    background: linear-gradient(135deg, var(--crimson1) 0%, var(--crimson2) 100%);
+}
+
+.circle.blue {
+    background: linear-gradient(135deg, var(--royal1) 0%, var(--royal2) 100%);
+}
+
+/* Rules Section */
+.rules-section {
+    background-color: var(--dark2);
+    border: 2px solid var(--gold2);
+    border-radius: 8px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+    padding: 30px;
+    margin-top: 30px;
+}
+
+.rules-section h2 {
+    font-size: 24px;
+    color: var(--gold1);
+    text-align: center;
+    margin-bottom: 15px;
+    text-shadow: 0 2px 10px rgba(255, 215, 0, 0.2);
+}
+
+.rules-divider {
+    width: 64px;
+    height: 4px;
+    margin: 0 auto 30px auto;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--crimson1) 0%, var(--royal1) 100%);
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+}
+
+.rules-list {
+    list-style: disc;
+    list-style-position: inside;
+    color: var(--gold1);
+    line-height: 1.8;
+    margin-bottom: 20px;
+}
+
+.rules-list li {
+    margin-bottom: 12px;
+    font-size: 15px;
+}
+
+.rules-list strong {
+    color: var(--gold1);
+}
+
+.instructions-box {
+    background-color: var(--dark3);
+    padding: 16px;
+    border-radius: 6px;
+    margin-top: 20px;
+    border: 1px solid var(--gold2);
+}
+
+.instructions-box p {
+    color: var(--gold1);
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.highlight {
+    background-color: var(--crimson1);
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: 500;
+    color: white;
+}
+
+/* Hints Container */
+.hints-container {
+    margin: 15px 0;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--dark3) 0%, var(--dark4) 100%);
+    border: 2px solid var(--crimson1);
+    border-radius: 6px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2), inset 0 0 10px rgba(204, 0, 0, 0.1);
+}
+
+.hints-container.hidden {
+    display: none;
+}
+
+.hints-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.hints-list li {
+    color: var(--gold1);
+    font-size: 14px;
+    margin-bottom: 8px;
+    padding-left: 8px;
+    line-height: 1.5;
+}
+
+.hints-list li:last-child {
+    margin-bottom: 0;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .control-group {
+        width: 100%;
+    }
+
+    .control-group select {
+        width: 100%;
+    }
+
+    .btn {
+        width: 100%;
+    }
+
+    .header h1 {
+        font-size: 28px;
+    }
+
+    .rules-section {
+        padding: 20px;
+    }
+
+
+}
