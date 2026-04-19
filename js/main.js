@@ -31,7 +31,8 @@ const translations = {
     newGame: "New Game",
     reset: "Reset",
     solvedMessage: "Congratulations! You solved the puzzle! 🎉",
-    solvedMessageWithTime: "Congratulations! You solved the puzzle. The time taken was {time} seconds! 🎉",
+    solvedMessageWithTime:
+      "Congratulations! You solved the puzzle. The time taken was {time} seconds! 🎉",
     violationMessage: "There are violations in the grid. Keep going!",
     hintTriplet: "⚠ Three or more same colors in a row",
     hintColor: "⚠ Too many of the same color in this row/column",
@@ -224,129 +225,128 @@ function displayHints(hints) {
     hintsContainer.classList.add("hidden");
   }
 }
-  const violations = {
-    rows: Array(size).fill(false),
-    cols: Array(size).fill(false),
-    cells: Array(size)
-      .fill(0)
-      .map(() => Array(size).fill(false)),
-  };
-  let hasViolations = false;
-
-  const targetCount = size / 2;
-  const rowStrings = new Map();
-  const colStrings = Array(size)
+const violations = {
+  rows: Array(size).fill(false),
+  cols: Array(size).fill(false),
+  cells: Array(size)
     .fill(0)
-    .map(() => []);
+    .map(() => Array(size).fill(false)),
+};
+let hasViolations = false;
 
-  // Check rows
-  for (let r = 0; r < size; r++) {
-    let redCountRow = 0;
-    let blueCountRow = 0;
-    let currentRowString = "";
-    let rowIsFull = true;
+const targetCount = size / 2;
+const rowStrings = new Map();
+const colStrings = Array(size)
+  .fill(0)
+  .map(() => []);
 
-    for (let c = 0; c < size; c++) {
-      const cell = grid[r][c];
-      currentRowString += cell;
-      colStrings[c].push(cell);
+// Check rows
+for (let r = 0; r < size; r++) {
+  let redCountRow = 0;
+  let blueCountRow = 0;
+  let currentRowString = "";
+  let rowIsFull = true;
 
-      if (cell === CELL_RED) redCountRow++;
-      else if (cell === CELL_BLUE) blueCountRow++;
-      else rowIsFull = false;
+  for (let c = 0; c < size; c++) {
+    const cell = grid[r][c];
+    currentRowString += cell;
+    colStrings[c].push(cell);
 
-      // Check horizontal triplets
-      if (c >= 2) {
-        if (
-          cell !== CELL_EMPTY &&
-          cell === grid[r][c - 1] &&
-          cell === grid[r][c - 2]
-        ) {
-          violations.cells[r][c] = true;
-          violations.cells[r][c - 1] = true;
-          violations.cells[r][c - 2] = true;
-          violations.rows[r] = true;
-          hasViolations = true;
-        }
-      }
+    if (cell === CELL_RED) redCountRow++;
+    else if (cell === CELL_BLUE) blueCountRow++;
+    else rowIsFull = false;
 
-      // Check vertical triplets
-      if (r >= 2) {
-        if (
-          cell !== CELL_EMPTY &&
-          cell === grid[r - 1][c] &&
-          cell === grid[r - 2][c]
-        ) {
-          violations.cells[r][c] = true;
-          violations.cells[r - 1][c] = true;
-          violations.cells[r - 2][c] = true;
-          violations.cols[c] = true;
-          hasViolations = true;
-        }
-      }
-    }
-
-    if (rowIsFull) {
+    // Check horizontal triplets
+    if (c >= 2) {
       if (
-        size % 2 === 0 &&
-        (redCountRow !== targetCount || blueCountRow !== targetCount)
+        cell !== CELL_EMPTY &&
+        cell === grid[r][c - 1] &&
+        cell === grid[r][c - 2]
       ) {
+        violations.cells[r][c] = true;
+        violations.cells[r][c - 1] = true;
+        violations.cells[r][c - 2] = true;
         violations.rows[r] = true;
         hasViolations = true;
       }
-
-      if (!violations.rows[r]) {
-        if (rowStrings.has(currentRowString)) {
-          violations.rows[r] = true;
-          violations.rows[rowStrings.get(currentRowString)] = true;
-          hasViolations = true;
-        } else {
-          rowStrings.set(currentRowString, r);
-        }
-      }
-    }
-  }
-
-  // Check columns
-  const colSet = new Map();
-  for (let c = 0; c < size; c++) {
-    const currentColArray = colStrings[c];
-    let redCountCol = 0;
-    let blueCountCol = 0;
-    let currentColString = "";
-    let colIsFull = true;
-
-    for (let r = 0; r < size; r++) {
-      const cell = currentColArray[r];
-      currentColString += cell;
-      if (cell === CELL_RED) redCountCol++;
-      else if (cell === CELL_BLUE) blueCountCol++;
-      else colIsFull = false;
     }
 
-    if (colIsFull) {
+    // Check vertical triplets
+    if (r >= 2) {
       if (
-        size % 2 === 0 &&
-        (redCountCol !== targetCount || blueCountCol !== targetCount)
+        cell !== CELL_EMPTY &&
+        cell === grid[r - 1][c] &&
+        cell === grid[r - 2][c]
       ) {
+        violations.cells[r][c] = true;
+        violations.cells[r - 1][c] = true;
+        violations.cells[r - 2][c] = true;
         violations.cols[c] = true;
         hasViolations = true;
       }
-
-      if (!violations.cols[c]) {
-        if (colSet.has(currentColString)) {
-          violations.cols[c] = true;
-          violations.cols[colSet.get(currentColString)] = true;
-          hasViolations = true;
-        } else {
-          colSet.set(currentColString, c);
-        }
-      }
     }
   }
 
-  return { violations, hasViolations };
+  if (rowIsFull) {
+    if (
+      size % 2 === 0 &&
+      (redCountRow !== targetCount || blueCountRow !== targetCount)
+    ) {
+      violations.rows[r] = true;
+      hasViolations = true;
+    }
+
+    if (!violations.rows[r]) {
+      if (rowStrings.has(currentRowString)) {
+        violations.rows[r] = true;
+        violations.rows[rowStrings.get(currentRowString)] = true;
+        hasViolations = true;
+      } else {
+        rowStrings.set(currentRowString, r);
+      }
+    }
+  }
 }
+
+// Check columns
+const colSet = new Map();
+for (let c = 0; c < size; c++) {
+  const currentColArray = colStrings[c];
+  let redCountCol = 0;
+  let blueCountCol = 0;
+  let currentColString = "";
+  let colIsFull = true;
+
+  for (let r = 0; r < size; r++) {
+    const cell = currentColArray[r];
+    currentColString += cell;
+    if (cell === CELL_RED) redCountCol++;
+    else if (cell === CELL_BLUE) blueCountCol++;
+    else colIsFull = false;
+  }
+
+  if (colIsFull) {
+    if (
+      size % 2 === 0 &&
+      (redCountCol !== targetCount || blueCountCol !== targetCount)
+    ) {
+      violations.cols[c] = true;
+      hasViolations = true;
+    }
+
+    if (!violations.cols[c]) {
+      if (colSet.has(currentColString)) {
+        violations.cols[c] = true;
+        violations.cols[colSet.get(currentColString)] = true;
+        hasViolations = true;
+      } else {
+        colSet.set(currentColString, c);
+      }
+    }
+  }
+}
+
+return { violations, hasViolations };
 
 /**
  * Generate a complete valid Binary Puzzle grid using backtracking
