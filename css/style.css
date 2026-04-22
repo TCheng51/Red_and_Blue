@@ -65,7 +65,7 @@ body {
 }
 
 .container {
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
@@ -102,86 +102,165 @@ body {
 /* Controls */
 .controls {
   background: linear-gradient(135deg, var(--dark2) 0%, var(--dark3) 100%);
-  border-radius: 12px;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
-  padding: 20px;
+  border-radius: 16px;
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.6);
+  padding: 24px;
   margin-bottom: 30px;
   border: 2px solid var(--gold2);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
   align-items: center;
+}
+
+.controls-panel {
+  background: rgba(42, 47, 74, 0.5);
+  border: 1px solid var(--gold3);
+  border-radius: 12px;
+  padding: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 10px rgba(255, 215, 0, 0.08);
+}
+
+.panel-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--gold1);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.settings-panel {
+  grid-column: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.timer-panel {
+  grid-column: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 215, 0, 0.1) 0%,
+    rgba(65, 105, 225, 0.1) 100%
+  );
+  border: 2px solid var(--gold2);
+  min-height: 100px;
+}
+
+.timer-display {
+  text-align: center;
+}
+
+.timer-label {
+  display: block;
+  font-size: 24px;
+  margin-bottom: 6px;
+}
+
+.timer-value {
+  display: block;
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--gold1);
+  text-shadow: 0 4px 8px rgba(255, 215, 0, 0.3);
+}
+
+.actions-panel {
+  grid-column: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .control-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .control-group label {
-  font-weight: 500;
+  font-weight: 600;
   color: var(--gold1);
   white-space: nowrap;
+  font-size: 13px;
+  min-width: 50px;
 }
 
 .control-group select {
-  padding: 8px 12px;
-  border: 1px solid var(--gold2);
-  border-radius: 6px;
-  background-color: var(--dark3);
+  flex: 1;
+  padding: 10px 12px;
+  border: 1.5px solid var(--gold2);
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--dark3) 0%, var(--dark4) 100%);
   color: var(--gold1);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  font-size: 13px;
 }
 
 .control-group select:hover {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.3);
+  border-color: var(--gold1);
+  transform: translateY(-2px);
 }
 
 .control-group select:focus {
   outline: none;
-  box-shadow: 0 0 0 2px var(--royal1);
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+  border-color: var(--gold1);
 }
 
 /* Buttons */
 .btn {
-  padding: 10px 20px;
-  font-size: 14px;
-  font-weight: 600;
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 700;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
   color: white;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  width: 100%;
 }
 
 .btn:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
 }
 
 .btn:active {
-  transform: scale(0.98);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-.btn-green {
+.btn-primary {
   background: linear-gradient(135deg, var(--gold1) 0%, var(--gold2) 100%);
   color: var(--dark1);
+  font-weight: 800;
 }
 
-.btn-green:hover {
+.btn-primary:hover {
   background: linear-gradient(135deg, var(--gold2) 0%, var(--gold3) 100%);
 }
 
-.btn-gray {
-  background: linear-gradient(135deg, var(--dark4) 0%, var(--dark5) 100%);
+.btn-secondary {
+  background: linear-gradient(135deg, var(--royal1) 0%, var(--royal2) 100%);
+  color: white;
+  font-size: 12px;
 }
 
-.btn-gray:hover {
-  background: linear-gradient(135deg, var(--dark5) 0%, var(--gold2) 100%);
+.btn-secondary:hover {
+  background: linear-gradient(135deg, var(--royal2) 0%, var(--royal1) 100%);
 }
 
 /* Status Message */
@@ -215,57 +294,68 @@ body {
 /* Game Grid */
 .game-grid {
   display: grid;
-  gap: 2px;
-  padding: 10px;
+  gap: 3px;
+  padding: 16px;
   background-color: var(--dark4);
-  border-radius: 6px;
-  border: 2px solid var(--gold2);
+  border-radius: 12px;
+  border: 3px solid var(--gold2);
   box-shadow:
-    0 8px 16px rgba(0, 0, 0, 0.5),
-    inset 0 0 20px rgba(255, 215, 0, 0.05);
+    0 12px 24px rgba(0, 0, 0, 0.6),
+    inset 0 0 20px rgba(255, 215, 0, 0.08);
   margin: 0 auto 20px auto;
   width: fit-content;
 }
 
 .cell {
-  width: 40px;
-  height: 40px;
+  width: 60px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--dark2);
-  border: 1px solid var(--gold3);
+  background: linear-gradient(135deg, var(--dark2) 0%, var(--dark3) 100%);
+  border: 2px solid var(--gold3);
   cursor: pointer;
-  border-radius: 2px;
-  transition: all 0.15s ease;
+  border-radius: 4px;
+  transition: all 0.2s ease;
 }
 
 .cell:hover:not(.locked) {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.2);
+  transform: scale(1.05);
+  border-color: var(--gold1);
+}
+
+.cell.selected {
+  box-shadow:
+    0 0 12px rgba(255, 215, 0, 0.7),
+    inset 0 0 6px rgba(255, 215, 0, 0.4);
+  border: 2px solid var(--gold1);
+  background: linear-gradient(135deg, var(--dark3) 0%, var(--dark4) 100%);
 }
 
 .cell.locked {
-  background-color: var(--dark3);
+  background: linear-gradient(135deg, var(--dark3) 0%, var(--dark4) 100%);
   cursor: not-allowed;
+  border-color: var(--gold2);
 }
 
 .cell.violation {
-  background-color: var(--crimson3);
+  background: linear-gradient(135deg, var(--crimson3) 0%, var(--crimson2) 100%);
   border: 2px solid var(--crimson1);
+  box-shadow: 0 0 8px rgba(204, 0, 0, 0.4);
 }
 
 .cell.violation.locked {
-  background-color: var(--crimson3);
+  background: linear-gradient(135deg, var(--crimson3) 0%, var(--crimson2) 100%);
 }
 
 .circle {
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   position: relative;
   box-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.4),
-    inset 0 0 5px rgba(255, 255, 255, 0.1);
+    0 3px 8px rgba(0, 0, 0, 0.5),
+    inset 0 0 6px rgba(255, 255, 255, 0.15);
   /* Shield shape with clip-path */
   clip-path: polygon(50% 0%, 100% 25%, 100% 65%, 50% 100%, 0% 65%, 0% 25%);
   display: flex;
@@ -382,29 +472,127 @@ body {
 }
 
 /* Responsive */
-@media (max-width: 600px) {
+@media (max-width: 768px) {
   .controls {
-    flex-direction: column;
-    align-items: stretch;
+    grid-template-columns: 1fr;
+    gap: 16px;
   }
 
-  .control-group {
-    width: 100%;
+  .cell {
+    width: 50px;
+    height: 50px;
   }
 
-  .control-group select {
-    width: 100%;
+  .circle {
+    width: 40px;
+    height: 40px;
   }
 
-  .btn {
-    width: 100%;
+  .game-grid {
+    gap: 2px;
+    padding: 12px;
   }
 
   .header h1 {
     font-size: 28px;
   }
 
+  .timer-value {
+    font-size: 28px;
+  }
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 12px;
+  }
+
+  .controls {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+
+  .controls-panel {
+    padding: 12px;
+  }
+
+  .timer-panel {
+    min-height: 80px;
+  }
+
+  .timer-value {
+    font-size: 24px;
+  }
+
+  .cell {
+    width: 45px;
+    height: 45px;
+  }
+
+  .circle {
+    width: 36px;
+    height: 36px;
+  }
+
+  .game-grid {
+    gap: 2px;
+    padding: 10px;
+    border-radius: 8px;
+  }
+
+  .header {
+    padding: 20px 15px;
+    margin-bottom: 20px;
+  }
+
+  .header h1 {
+    font-size: 24px;
+  }
+
+  .header-divider {
+    width: 80px;
+  }
+
   .rules-section {
-    padding: 20px;
+    padding: 16px;
+  }
+
+  .btn {
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .control-group label {
+    font-size: 12px;
+  }
+
+  .control-group select {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+}
+
+@media (max-width: 400px) {
+  .cell {
+    width: 40px;
+    height: 40px;
+  }
+
+  .circle {
+    width: 32px;
+    height: 32px;
+  }
+
+  .game-grid {
+    gap: 1px;
+    padding: 8px;
+  }
+
+  .header h1 {
+    font-size: 20px;
+  }
+
+  .timer-value {
+    font-size: 20px;
   }
 }

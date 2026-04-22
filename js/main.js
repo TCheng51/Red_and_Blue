@@ -16,6 +16,15 @@ let gameState = {
   startTime: null,
   elapsedTime: 0,
   violationMessageTimeout: null,
+  moveHistory: [],
+  stats: {
+    gamesPlayed: 0,
+    gamesWon: 0,
+    bestTime: null,
+  },
+  selectedCell: null,
+  timerInterval: null,
+  feedbackTimeout: null,
 };
 
 // Translations
@@ -30,16 +39,22 @@ const translations = {
     hard: "Hard",
     newGame: "New Game",
     reset: "Reset",
+    hint: "Hint",
+    undo: "Undo",
+    stats: "Stats",
+    gamesPlayed: "Games Played:",
+    gamesWon: "Games Won:",
+    bestTime: "Best Time:",
     solvedMessage: "Congratulations! You solved the puzzle! 🎉",
     solvedMessageWithTime:
-      "Congratulations! You solved the puzzle. The time taken was {time} seconds! 🎉",
+      "Congratulations! You solved the puzzle in {time} seconds! 🎉",
     violationMessage: "There are violations in the grid. Keep going!",
     hintTriplet: "⚠ Three or more same colors in a row",
     hintColor: "⚠ Too many of the same color in this row/column",
     hintDuplicate: "⚠ This row/column is identical to another",
     howToPlayTitle: "How to Play Binary Puzzle:",
     instructions:
-      "Click on an empty square to cycle its state: Empty → Red → Blue → Empty. Squares with gray background are part of the initial puzzle and cannot be changed. Highlighted areas indicate a rule violation.",
+      "Click on a cell or use arrow keys to select, then click/press number to fill (1=Red, 2=Blue, 0=Empty). Locked cells have a gray background.",
   },
   "zh-tw": {
     languageName: "繁體中文",
@@ -51,15 +66,21 @@ const translations = {
     hard: "困難",
     newGame: "新遊戲",
     reset: "重置",
+    hint: "提示",
+    undo: "復原",
+    stats: "統計",
+    gamesPlayed: "遊戲次數：",
+    gamesWon: "勝利次數：",
+    bestTime: "最佳時間：",
     solvedMessage: "恭喜！您解決了拼圖！🎉",
-    solvedMessageWithTime: "恭喜！您解決了拼圖。花費時間為 {time} 秒！🎉",
+    solvedMessageWithTime: "恭喜！您用 {time} 秒解決了拼圖！🎉",
     violationMessage: "網格中存在違規。請繼續！",
     hintTriplet: "⚠ 一行或一列中有三個或以上相同顏色",
     hintColor: "⚠ 這行或這列的同一顏色過多",
     hintDuplicate: "⚠ 這行或這列與另一行/列相同",
     howToPlayTitle: "二進制拼圖玩法說明：",
     instructions:
-      "點擊空格以切換其狀態：空白 → 紅色 → 藍色 → 空白。帶有灰色背景的方塊是初始拼圖的一部分，無法更改。高亮區域表示規則違規。",
+      "點擊格子或使用方向鍵選擇，然後點擊/按數字填入（1=紅色、2=藍色、0=空白）。灰色背景的方塊是初始拼圖，無法更改。",
   },
   "zh-cn": {
     languageName: "简体中文",
@@ -71,15 +92,21 @@ const translations = {
     hard: "困难",
     newGame: "新游戏",
     reset: "重置",
+    hint: "提示",
+    undo: "撤销",
+    stats: "统计",
+    gamesPlayed: "游戏次数：",
+    gamesWon: "胜利次数：",
+    bestTime: "最佳时间：",
     solvedMessage: "恭喜！您解决了拼图！🎉",
-    solvedMessageWithTime: "恭喜！您解决了拼图。花费时间为 {time} 秒！🎉",
+    solvedMessageWithTime: "恭喜！您用 {time} 秒解决了拼图！🎉",
     violationMessage: "网格中存在违规。请继续！",
     hintTriplet: "⚠ 一行或一列中有三个或以上相同颜色",
     hintColor: "⚠ 这行或这列的同一颜色过多",
     hintDuplicate: "⚠ 这行或这列与另一行/列相同",
     howToPlayTitle: "二进制拼图玩法说明：",
     instructions:
-      "点击空格以切换其状态：空白 → 红色 → 蓝色 → 空白。带有灰色背景的方块是初始拼图的一部分，无法更改。高亮区域表示规则违规。",
+      "点击格子或使用方向键选择，然后点击/按数字填入（1=红色、2=蓝色、0=空白）。灰色背景的方块是初始拼图，无法更改。",
   },
 };
 
@@ -93,6 +120,69 @@ function getRandomInt(min, max) {
  */
 function formatTime(milliseconds) {
   return Math.floor(milliseconds / 1000);
+}
+
+/**
+ * Load game statistics from localStorage
+ */
+function loadStats() {
+  const saved = localStorage.getItem("puzzleStats");
+  return saved
+    ? JSON.parse(saved)
+    : { gamesPlayed: 0, gamesWon: 0, bestTime: null };
+}
+
+/**
+ * Save game statistics to localStorage
+ */
+function saveStats(stats) {
+  localStorage.setItem("puzzleStats", JSON.stringify(stats));
+}
+
+/**
+ * Start the game timer
+ */
+function startTimer() {
+  if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+  gameState.timerInterval = setInterval(() => {
+    const elapsed = Date.now() - gameState.startTime;
+    const seconds = Math.floor(elapsed / 1000);
+    const timerElement = document.getElementById("timer");
+    if (timerElement) {
+      timerElement.textContent = `${seconds}s`;
+    }
+  }, 100);
+}
+
+/**
+ * Stop the game timer
+ */
+function stopTimer() {
+  if (gameState.timerInterval) {
+    clearInterval(gameState.timerInterval);
+    gameState.timerInterval = null;
+  }
+}
+
+/**
+ * Add a move to history for undo functionality
+ */
+function recordMove(r, c, newValue) {
+  gameState.moveHistory.push({ r, c, newValue });
+}
+
+/**
+ * Undo the last move
+ */
+function undoLastMove() {
+  if (gameState.moveHistory.length === 0) return;
+
+  const move = gameState.moveHistory.pop();
+  const previousValue = (move.newValue - 1 + 3) % 3;
+  if (gameState.initialGrid[move.r][move.c] === CELL_EMPTY) {
+    gameState.grid[move.r][move.c] = previousValue;
+    updateGame();
+  }
 }
 
 /**
@@ -225,128 +315,133 @@ function displayHints(hints) {
     hintsContainer.classList.add("hidden");
   }
 }
-const violations = {
-  rows: Array(size).fill(false),
-  cols: Array(size).fill(false),
-  cells: Array(size)
+/**
+ * Check for violations in the current grid
+ */
+function checkViolations(grid, size) {
+  const violations = {
+    rows: Array(size).fill(false),
+    cols: Array(size).fill(false),
+    cells: Array(size)
+      .fill(0)
+      .map(() => Array(size).fill(false)),
+  };
+  let hasViolations = false;
+
+  const targetCount = size / 2;
+  const rowStrings = new Map();
+  const colStrings = Array(size)
     .fill(0)
-    .map(() => Array(size).fill(false)),
-};
-let hasViolations = false;
+    .map(() => []);
 
-const targetCount = size / 2;
-const rowStrings = new Map();
-const colStrings = Array(size)
-  .fill(0)
-  .map(() => []);
-
-// Check rows
-for (let r = 0; r < size; r++) {
-  let redCountRow = 0;
-  let blueCountRow = 0;
-  let currentRowString = "";
-  let rowIsFull = true;
-
-  for (let c = 0; c < size; c++) {
-    const cell = grid[r][c];
-    currentRowString += cell;
-    colStrings[c].push(cell);
-
-    if (cell === CELL_RED) redCountRow++;
-    else if (cell === CELL_BLUE) blueCountRow++;
-    else rowIsFull = false;
-
-    // Check horizontal triplets
-    if (c >= 2) {
-      if (
-        cell !== CELL_EMPTY &&
-        cell === grid[r][c - 1] &&
-        cell === grid[r][c - 2]
-      ) {
-        violations.cells[r][c] = true;
-        violations.cells[r][c - 1] = true;
-        violations.cells[r][c - 2] = true;
-        violations.rows[r] = true;
-        hasViolations = true;
-      }
-    }
-
-    // Check vertical triplets
-    if (r >= 2) {
-      if (
-        cell !== CELL_EMPTY &&
-        cell === grid[r - 1][c] &&
-        cell === grid[r - 2][c]
-      ) {
-        violations.cells[r][c] = true;
-        violations.cells[r - 1][c] = true;
-        violations.cells[r - 2][c] = true;
-        violations.cols[c] = true;
-        hasViolations = true;
-      }
-    }
-  }
-
-  if (rowIsFull) {
-    if (
-      size % 2 === 0 &&
-      (redCountRow !== targetCount || blueCountRow !== targetCount)
-    ) {
-      violations.rows[r] = true;
-      hasViolations = true;
-    }
-
-    if (!violations.rows[r]) {
-      if (rowStrings.has(currentRowString)) {
-        violations.rows[r] = true;
-        violations.rows[rowStrings.get(currentRowString)] = true;
-        hasViolations = true;
-      } else {
-        rowStrings.set(currentRowString, r);
-      }
-    }
-  }
-}
-
-// Check columns
-const colSet = new Map();
-for (let c = 0; c < size; c++) {
-  const currentColArray = colStrings[c];
-  let redCountCol = 0;
-  let blueCountCol = 0;
-  let currentColString = "";
-  let colIsFull = true;
-
+  // Check rows
   for (let r = 0; r < size; r++) {
-    const cell = currentColArray[r];
-    currentColString += cell;
-    if (cell === CELL_RED) redCountCol++;
-    else if (cell === CELL_BLUE) blueCountCol++;
-    else colIsFull = false;
-  }
+    let redCountRow = 0;
+    let blueCountRow = 0;
+    let currentRowString = "";
+    let rowIsFull = true;
 
-  if (colIsFull) {
-    if (
-      size % 2 === 0 &&
-      (redCountCol !== targetCount || blueCountCol !== targetCount)
-    ) {
-      violations.cols[c] = true;
-      hasViolations = true;
+    for (let c = 0; c < size; c++) {
+      const cell = grid[r][c];
+      currentRowString += cell;
+      colStrings[c].push(cell);
+
+      if (cell === CELL_RED) redCountRow++;
+      else if (cell === CELL_BLUE) blueCountRow++;
+      else rowIsFull = false;
+
+      // Check horizontal triplets
+      if (c >= 2) {
+        if (
+          cell !== CELL_EMPTY &&
+          cell === grid[r][c - 1] &&
+          cell === grid[r][c - 2]
+        ) {
+          violations.cells[r][c] = true;
+          violations.cells[r][c - 1] = true;
+          violations.cells[r][c - 2] = true;
+          violations.rows[r] = true;
+          hasViolations = true;
+        }
+      }
+
+      // Check vertical triplets
+      if (r >= 2) {
+        if (
+          cell !== CELL_EMPTY &&
+          cell === grid[r - 1][c] &&
+          cell === grid[r - 2][c]
+        ) {
+          violations.cells[r][c] = true;
+          violations.cells[r - 1][c] = true;
+          violations.cells[r - 2][c] = true;
+          violations.cols[c] = true;
+          hasViolations = true;
+        }
+      }
     }
 
-    if (!violations.cols[c]) {
-      if (colSet.has(currentColString)) {
-        violations.cols[c] = true;
-        violations.cols[colSet.get(currentColString)] = true;
+    if (rowIsFull) {
+      if (
+        size % 2 === 0 &&
+        (redCountRow !== targetCount || blueCountRow !== targetCount)
+      ) {
+        violations.rows[r] = true;
         hasViolations = true;
-      } else {
-        colSet.set(currentColString, c);
+      }
+
+      if (!violations.rows[r]) {
+        if (rowStrings.has(currentRowString)) {
+          violations.rows[r] = true;
+          violations.rows[rowStrings.get(currentRowString)] = true;
+          hasViolations = true;
+        } else {
+          rowStrings.set(currentRowString, r);
+        }
       }
     }
   }
-}
 
-return { violations, hasViolations };
+  // Check columns
+  const colSet = new Map();
+  for (let c = 0; c < size; c++) {
+    const currentColArray = colStrings[c];
+    let redCountCol = 0;
+    let blueCountCol = 0;
+    let currentColString = "";
+    let colIsFull = true;
+
+    for (let r = 0; r < size; r++) {
+      const cell = currentColArray[r];
+      currentColString += cell;
+      if (cell === CELL_RED) redCountCol++;
+      else if (cell === CELL_BLUE) blueCountCol++;
+      else colIsFull = false;
+    }
+
+    if (colIsFull) {
+      if (
+        size % 2 === 0 &&
+        (redCountCol !== targetCount || blueCountCol !== targetCount)
+      ) {
+        violations.cols[c] = true;
+        hasViolations = true;
+      }
+
+      if (!violations.cols[c]) {
+        if (colSet.has(currentColString)) {
+          violations.cols[c] = true;
+          violations.cols[colSet.get(currentColString)] = true;
+          hasViolations = true;
+        } else {
+          colSet.set(currentColString, c);
+        }
+      }
+    }
+  }
+
+  return { violations, hasViolations };
+}
 
 /**
  * Generate a complete valid Binary Puzzle grid using backtracking
@@ -480,13 +575,27 @@ function generateCompleteGrid(size) {
  * Generate new puzzle based on size and difficulty
  */
 function generatePuzzle() {
+  stopTimer();
+
+  // Clear any pending feedback timeout
+  if (gameState.feedbackTimeout) {
+    clearTimeout(gameState.feedbackTimeout);
+    gameState.feedbackTimeout = null;
+  }
+
   const size = gameState.size;
   const difficulty = gameState.difficulty;
 
   gameState.isSolved = false;
   gameState.hasViolations = false;
+  gameState.moveHistory = [];
+  gameState.selectedCell = null;
   gameState.startTime = Date.now();
   gameState.elapsedTime = 0;
+  gameState.stats = loadStats();
+  gameState.stats.gamesPlayed++;
+  saveStats(gameState.stats);
+
   gameState.violations = {
     rows: Array(size).fill(false),
     cols: Array(size).fill(false),
@@ -503,6 +612,8 @@ function generatePuzzle() {
     gameState.initialGrid = Array(size)
       .fill(0)
       .map(() => Array(size).fill(CELL_EMPTY));
+    renderGrid();
+    updateStatus();
     return;
   }
 
@@ -549,6 +660,7 @@ function generatePuzzle() {
   gameState.initialGrid = newInitialGrid;
   renderGrid();
   updateStatus();
+  startTimer();
 }
 
 /**
@@ -557,7 +669,11 @@ function generatePuzzle() {
 function handleCellClick(r, c) {
   if (gameState.initialGrid[r][c] !== CELL_EMPTY) return;
 
-  gameState.grid[r][c] = (gameState.grid[r][c] + 1) % 3;
+  gameState.selectedCell = { r, c };
+  const oldValue = gameState.grid[r][c];
+  const newValue = (oldValue + 1) % 3;
+  gameState.grid[r][c] = newValue;
+  recordMove(r, c, newValue);
   updateGame();
 }
 
@@ -584,8 +700,86 @@ function updateGame() {
   gameState.hasViolations = hasViolations;
   gameState.isSolved = allCellsFilled && !hasViolations;
 
-  renderGrid();
-  updateStatus();
+  // Clear any pending feedback timeout
+  if (gameState.feedbackTimeout) {
+    clearTimeout(gameState.feedbackTimeout);
+    gameState.feedbackTimeout = null;
+  }
+
+  if (hasViolations) {
+    // Render grid without violations visible first
+    renderGridWithoutViolations();
+    updateStatusWithDelay();
+  } else {
+    renderGrid();
+    updateStatus();
+  }
+}
+
+/**
+ * Render grid without showing violations
+ */
+function renderGridWithoutViolations() {
+  const gridElement = document.getElementById("game-grid");
+  const size = gameState.size;
+  gridElement.innerHTML = "";
+  gridElement.style.gridTemplateColumns = `repeat(${size}, 60px)`;
+
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      cell.id = `cell-${r}-${c}`;
+      cell.setAttribute("data-row", r);
+      cell.setAttribute("data-col", c);
+
+      if (gameState.initialGrid[r][c] !== CELL_EMPTY) {
+        cell.classList.add("locked");
+      }
+
+      if (
+        gameState.selectedCell &&
+        gameState.selectedCell.r === r &&
+        gameState.selectedCell.c === c
+      ) {
+        cell.classList.add("selected");
+      }
+
+      const cellValue = gameState.grid[r][c];
+      if (cellValue === CELL_RED) {
+        const circle = document.createElement("div");
+        circle.className = "circle red";
+        cell.appendChild(circle);
+      } else if (cellValue === CELL_BLUE) {
+        const circle = document.createElement("div");
+        circle.className = "circle blue";
+        cell.appendChild(circle);
+      }
+
+      cell.addEventListener("click", () => handleCellClick(r, c));
+      gridElement.appendChild(cell);
+    }
+  }
+}
+
+/**
+ * Update status with delayed feedback
+ */
+function updateStatusWithDelay() {
+  const statusElement = document.getElementById("status-message");
+  const t = translations[gameState.currentLanguage];
+
+  // Show warning message immediately
+  statusElement.textContent = t.violationMessage;
+  statusElement.classList.remove("hidden");
+  statusElement.className = "status-message warning";
+
+  // Delay visual feedback and hints by 1 second
+  gameState.feedbackTimeout = setTimeout(() => {
+    renderGrid();
+    const hints = generateHints();
+    displayHints(hints);
+  }, 1000);
 }
 
 /**
@@ -593,6 +787,13 @@ function updateGame() {
  */
 function resetGame() {
   const size = gameState.size;
+
+  // Clear any pending feedback timeout
+  if (gameState.feedbackTimeout) {
+    clearTimeout(gameState.feedbackTimeout);
+    gameState.feedbackTimeout = null;
+  }
+
   gameState.grid = JSON.parse(JSON.stringify(gameState.initialGrid));
   gameState.isSolved = false;
   gameState.hasViolations = false;
@@ -616,12 +817,15 @@ function renderGrid() {
   const gridElement = document.getElementById("game-grid");
   const size = gameState.size;
   gridElement.innerHTML = "";
-  gridElement.style.gridTemplateColumns = `repeat(${size}, 1fr)`;
+  gridElement.style.gridTemplateColumns = `repeat(${size}, 60px)`;
 
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
       const cell = document.createElement("div");
       cell.className = "cell";
+      cell.id = `cell-${r}-${c}`;
+      cell.setAttribute("data-row", r);
+      cell.setAttribute("data-col", c);
 
       if (gameState.initialGrid[r][c] !== CELL_EMPTY) {
         cell.classList.add("locked");
@@ -633,6 +837,14 @@ function renderGrid() {
 
       if (gameState.violations.cells[r][c]) {
         cell.style.borderColor = "var(--orange2)";
+      }
+
+      if (
+        gameState.selectedCell &&
+        gameState.selectedCell.r === r &&
+        gameState.selectedCell.c === c
+      ) {
+        cell.classList.add("selected");
       }
 
       const cellValue = gameState.grid[r][c];
@@ -661,15 +873,24 @@ function updateStatus() {
 
   statusElement.classList.add("hidden");
 
-  // Clear any pending violation message timeout
-  if (gameState.violationMessageTimeout) {
-    clearTimeout(gameState.violationMessageTimeout);
-    gameState.violationMessageTimeout = null;
+  // Clear any pending feedback timeout
+  if (gameState.feedbackTimeout) {
+    clearTimeout(gameState.feedbackTimeout);
+    gameState.feedbackTimeout = null;
   }
 
   if (gameState.isSolved) {
+    stopTimer();
     gameState.elapsedTime = Date.now() - gameState.startTime;
     const formattedTime = formatTime(gameState.elapsedTime);
+
+    gameState.stats = loadStats();
+    gameState.stats.gamesWon++;
+    if (!gameState.stats.bestTime || formattedTime < gameState.stats.bestTime) {
+      gameState.stats.bestTime = formattedTime;
+    }
+    saveStats(gameState.stats);
+
     const messageTemplate = t.solvedMessageWithTime || t.solvedMessage;
     const message = messageTemplate.includes("{time}")
       ? messageTemplate.replace("{time}", formattedTime)
@@ -678,16 +899,6 @@ function updateStatus() {
     statusElement.classList.remove("hidden");
     statusElement.className = "status-message success";
     document.getElementById("hints-container").classList.add("hidden");
-  } else if (gameState.hasViolations) {
-    // Delay violation message and hints by 1 second
-    gameState.violationMessageTimeout = setTimeout(() => {
-      statusElement.textContent = t.violationMessage;
-      statusElement.classList.remove("hidden");
-      statusElement.className = "status-message warning";
-
-      const hints = generateHints();
-      displayHints(hints);
-    }, 1000);
   } else {
     document.getElementById("hints-container").classList.add("hidden");
   }
@@ -707,6 +918,7 @@ function updateLanguageUI() {
   document.getElementById("opt-hard").textContent = t.hard;
   document.getElementById("new-game-btn").textContent = t.newGame;
   document.getElementById("reset-btn").textContent = t.reset;
+  document.getElementById("undo-btn").textContent = t.undo;
   document.getElementById("rules-title").textContent = t.howToPlayTitle;
   document.getElementById("instructions").textContent = t.instructions;
 }
@@ -736,6 +948,57 @@ function setupEventListeners() {
     .getElementById("new-game-btn")
     .addEventListener("click", generatePuzzle);
   document.getElementById("reset-btn").addEventListener("click", resetGame);
+  document.getElementById("undo-btn").addEventListener("click", undoLastMove);
+
+  // Keyboard support
+  document.addEventListener("keydown", (e) => {
+    if (!gameState.selectedCell) {
+      gameState.selectedCell = { r: 0, c: 0 };
+    }
+
+    const { r, c } = gameState.selectedCell;
+    const size = gameState.size;
+
+    switch (e.key) {
+      case "ArrowUp":
+        e.preventDefault();
+        gameState.selectedCell.r = (r - 1 + size) % size;
+        renderGrid();
+        break;
+      case "ArrowDown":
+        e.preventDefault();
+        gameState.selectedCell.r = (r + 1) % size;
+        renderGrid();
+        break;
+      case "ArrowLeft":
+        e.preventDefault();
+        gameState.selectedCell.c = (c - 1 + size) % size;
+        renderGrid();
+        break;
+      case "ArrowRight":
+        e.preventDefault();
+        gameState.selectedCell.c = (c + 1) % size;
+        renderGrid();
+        break;
+      case "0":
+      case "1":
+      case "2":
+        e.preventDefault();
+        if (gameState.initialGrid[r][c] === CELL_EMPTY) {
+          gameState.grid[r][c] = parseInt(e.key);
+          recordMove(r, c, parseInt(e.key));
+          updateGame();
+        }
+        break;
+      case "z":
+      case "Z":
+        if (e.ctrlKey || e.metaKey) {
+          e.preventDefault();
+          undoLastMove();
+        }
+        break;
+    }
+  });
 }
 
 /**
