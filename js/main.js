@@ -126,17 +126,26 @@ function formatTime(milliseconds) {
  * Load game statistics from localStorage
  */
 function loadStats() {
-  const saved = localStorage.getItem("puzzleStats");
-  return saved
-    ? JSON.parse(saved)
-    : { gamesPlayed: 0, gamesWon: 0, bestTime: null };
+  try {
+    const saved = localStorage.getItem("puzzleStats");
+    return saved
+      ? JSON.parse(saved)
+      : { gamesPlayed: 0, gamesWon: 0, bestTime: null };
+  } catch (error) {
+    console.error("Error loading stats from localStorage:", error);
+    return { gamesPlayed: 0, gamesWon: 0, bestTime: null };
+  }
 }
 
 /**
  * Save game statistics to localStorage
  */
 function saveStats(stats) {
-  localStorage.setItem("puzzleStats", JSON.stringify(stats));
+  try {
+    localStorage.setItem("puzzleStats", JSON.stringify(stats));
+  } catch (error) {
+    console.error("Error saving stats to localStorage:", error);
+  }
 }
 
 /**
@@ -151,7 +160,7 @@ function startTimer() {
     if (timerElement) {
       timerElement.textContent = `${seconds}s`;
     }
-  }, 100);
+  }, 1000);
 }
 
 /**
@@ -178,9 +187,10 @@ function undoLastMove() {
   if (gameState.moveHistory.length === 0) return;
 
   const move = gameState.moveHistory.pop();
-  const previousValue = (move.newValue - 1 + 3) % 3;
+  // Store the old value before the move was made
+  const oldValue = (move.newValue + 2) % 3; // Cycle backwards: 1->0, 2->1, 0->2
   if (gameState.initialGrid[move.r][move.c] === CELL_EMPTY) {
-    gameState.grid[move.r][move.c] = previousValue;
+    gameState.grid[move.r][move.c] = oldValue;
     updateGame();
   }
 }
@@ -595,6 +605,7 @@ function generatePuzzle() {
   gameState.stats = loadStats();
   gameState.stats.gamesPlayed++;
   saveStats(gameState.stats);
+  updateStatsDisplay();
 
   gameState.violations = {
     rows: Array(size).fill(false),
@@ -723,7 +734,7 @@ function renderGridWithoutViolations() {
   const gridElement = document.getElementById("game-grid");
   const size = gameState.size;
   gridElement.innerHTML = "";
-  gridElement.style.gridTemplateColumns = `repeat(${size}, 60px)`;
+  gridElement.style.gridTemplateColumns = `repeat(${size}, var(--cell-size))`;
 
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
@@ -732,9 +743,12 @@ function renderGridWithoutViolations() {
       cell.id = `cell-${r}-${c}`;
       cell.setAttribute("data-row", r);
       cell.setAttribute("data-col", c);
+      cell.setAttribute("tabindex", "0");
+      cell.setAttribute("aria-label", `Row ${r + 1}, Column ${c + 1}`);
 
       if (gameState.initialGrid[r][c] !== CELL_EMPTY) {
         cell.classList.add("locked");
+        cell.setAttribute("aria-label", `Row ${r + 1}, Column ${c + 1}, Locked`);
       }
 
       if (
@@ -750,10 +764,12 @@ function renderGridWithoutViolations() {
         const circle = document.createElement("div");
         circle.className = "circle red";
         cell.appendChild(circle);
+        cell.setAttribute("aria-label", cell.getAttribute("aria-label") + ", Red");
       } else if (cellValue === CELL_BLUE) {
         const circle = document.createElement("div");
         circle.className = "circle blue";
         cell.appendChild(circle);
+        cell.setAttribute("aria-label", cell.getAttribute("aria-label") + ", Blue");
       }
 
       cell.addEventListener("click", () => handleCellClick(r, c));
@@ -817,7 +833,7 @@ function renderGrid() {
   const gridElement = document.getElementById("game-grid");
   const size = gameState.size;
   gridElement.innerHTML = "";
-  gridElement.style.gridTemplateColumns = `repeat(${size}, 60px)`;
+  gridElement.style.gridTemplateColumns = `repeat(${size}, var(--cell-size))`;
 
   for (let r = 0; r < size; r++) {
     for (let c = 0; c < size; c++) {
@@ -826,9 +842,12 @@ function renderGrid() {
       cell.id = `cell-${r}-${c}`;
       cell.setAttribute("data-row", r);
       cell.setAttribute("data-col", c);
+      cell.setAttribute("tabindex", "0");
+      cell.setAttribute("aria-label", `Row ${r + 1}, Column ${c + 1}`);
 
       if (gameState.initialGrid[r][c] !== CELL_EMPTY) {
         cell.classList.add("locked");
+        cell.setAttribute("aria-label", `Row ${r + 1}, Column ${c + 1}, Locked`);
       }
 
       if (gameState.violations.rows[r] || gameState.violations.cols[c]) {
@@ -852,10 +871,12 @@ function renderGrid() {
         const circle = document.createElement("div");
         circle.className = "circle red";
         cell.appendChild(circle);
+        cell.setAttribute("aria-label", cell.getAttribute("aria-label") + ", Red");
       } else if (cellValue === CELL_BLUE) {
         const circle = document.createElement("div");
         circle.className = "circle blue";
         cell.appendChild(circle);
+        cell.setAttribute("aria-label", cell.getAttribute("aria-label") + ", Blue");
       }
 
       cell.addEventListener("click", () => handleCellClick(r, c));
@@ -890,6 +911,7 @@ function updateStatus() {
       gameState.stats.bestTime = formattedTime;
     }
     saveStats(gameState.stats);
+    updateStatsDisplay();
 
     const messageTemplate = t.solvedMessageWithTime || t.solvedMessage;
     const message = messageTemplate.includes("{time}")
@@ -921,6 +943,19 @@ function updateLanguageUI() {
   document.getElementById("undo-btn").textContent = t.undo;
   document.getElementById("rules-title").textContent = t.howToPlayTitle;
   document.getElementById("instructions").textContent = t.instructions;
+  document.getElementById("stat-games-played").textContent = t.gamesPlayed;
+  document.getElementById("stat-games-won").textContent = t.gamesWon;
+  document.getElementById("stat-best-time").textContent = t.bestTime;
+}
+
+/**
+ * Update stats display
+ */
+function updateStatsDisplay() {
+  const stats = gameState.stats;
+  document.getElementById("games-played").textContent = stats.gamesPlayed;
+  document.getElementById("games-won").textContent = stats.gamesWon;
+  document.getElementById("best-time").textContent = stats.bestTime ? `${stats.bestTime}s` : "-";
 }
 
 /**
@@ -1006,6 +1041,8 @@ function setupEventListeners() {
  */
 function initGame() {
   setupEventListeners();
+  gameState.stats = loadStats();
+  updateStatsDisplay();
   generatePuzzle();
 }
 

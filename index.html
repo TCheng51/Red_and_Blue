@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>二進制拼圖-紅藍</title>
+    <title>Tango - Binary Puzzle</title>
     <link rel="stylesheet" href="css/style.css" />
     <script src="js/main.js"></script>
   </head>
@@ -12,7 +12,7 @@
     <div class="container">
       <!-- Header -->
       <div class="header">
-        <h1 id="title">二進制拼圖-紅藍</h1>
+        <h1 id="title">Red and Blue</h1>
         <div class="header-divider"></div>
       </div>
 
@@ -55,6 +55,24 @@
           <div class="timer-display">
             <span class="timer-label">⏱️</span>
             <span id="timer" class="timer-value">0s</span>
+          </div>
+        </div>
+
+        <!-- Stats Panel -->
+        <div class="controls-panel stats-panel">
+          <div class="stats-display">
+            <div class="stat-item">
+              <span class="stat-label" id="stat-games-played">遊戲次數：</span>
+              <span class="stat-value" id="games-played">0</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label" id="stat-games-won">勝利次數：</span>
+              <span class="stat-value" id="games-won">0</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label" id="stat-best-time">最佳時間：</span>
+              <span class="stat-value" id="best-time">-</span>
+            </div>
           </div>
         </div>
 
