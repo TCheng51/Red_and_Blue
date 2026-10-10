@@ -3,6 +3,10 @@ const CELL_EMPTY = 0;
 const CELL_RED = 1;
 const CELL_BLUE = 2;
 
+// Backtracking attempts before giving up on puzzle generation.
+const MAX_ATTEMPTS = 1000;
+let generationAttemptLog = [];
+
 function storageAvailable() {
   try {
     const storage = typeof window !== 'undefined' ? window.localStorage : null;
@@ -43,6 +47,7 @@ const translations = {
   en: {
     settings: '⚙️ Settings',
     language: 'Language',
+    appTitle: 'Red and Blue',
     title: 'Binary Puzzle - Red and Blue',
     size: 'Size:',
     difficulty: 'Difficulty:',
@@ -52,6 +57,13 @@ const translations = {
     newGame: 'New Game',
     reset: 'Reset',
     undo: 'Undo',
+    hint: 'Hint',
+    hintTripletRow: 'Row {row}: three-in-a-row of {color} at {range}',
+    hintTripletCol: 'Column {col}: three-in-a-column of {color} at {range}',
+    hintCountRow: 'Row {row}: red and blue counts are not equal',
+    hintCountCol: 'Column {col}: red and blue counts are not equal',
+    hintUniqRow: 'Row {row} is identical to row {otherRow}',
+    hintUniqCol: 'Column {col} is identical to column {otherCol}',
     resetStats: 'Reset stats',
     storageUnavailable: 'Stats are stored in memory only while localStorage is blocked.',
     gamesPlayed: 'Games Played:',
@@ -74,6 +86,7 @@ const translations = {
   'zh-tw': {
     settings: '⚙️ 設定',
     language: '語言',
+    appTitle: 'Red and Blue',
     title: 'Binary Puzzle - Red and Blue',
     size: '大小：',
     difficulty: '難度：',
@@ -83,6 +96,13 @@ const translations = {
     newGame: '新遊戲',
     reset: '重置',
     undo: '復原',
+    hint: '提示',
+    hintTripletRow: '第 {row} 行：{color} 在 {range} 三連',
+    hintTripletCol: '第 {col} 列：{color} 在 {range} 三連',
+    hintCountRow: '第 {row} 行：紅藍數量不相等',
+    hintCountCol: '第 {col} 列：紅藍數量不相等',
+    hintUniqRow: '第 {row} 行與第 {otherRow} 行完全相同',
+    hintUniqCol: '第 {col} 列與第 {otherCol} 列完全相同',
     resetStats: '重設統計',
     storageUnavailable: '目前瀏覽器無法使用 localStorage，統計資料只保存在記憶體中。',
     gamesPlayed: '遊戲次數：',
@@ -105,6 +125,7 @@ const translations = {
   'zh-cn': {
     settings: '⚙️ 设置',
     language: '语言',
+    appTitle: 'Red and Blue',
     title: 'Binary Puzzle - Red and Blue',
     size: '大小：',
     difficulty: '难度：',
@@ -114,6 +135,13 @@ const translations = {
     newGame: '新游戏',
     reset: '重置',
     undo: '撤销',
+    hint: '提示',
+    hintTripletRow: '第 {row} 行：{color} 在 {range} 三连',
+    hintTripletCol: '第 {col} 列：{color} 在 {range} 三连',
+    hintCountRow: '第 {row} 行：红蓝数量不相等',
+    hintCountCol: '第 {col} 列：红蓝数量不相等',
+    hintUniqRow: '第 {row} 行与第 {otherRow} 行完全相同',
+    hintUniqCol: '第 {col} 列与第 {otherCol} 列完全相同',
     resetStats: '重设统计',
     storageUnavailable: '当前浏览器无法使用 localStorage，统计数据只保存在内存中。',
     gamesPlayed: '游戏次数：',
@@ -175,8 +203,11 @@ function saveStats(stats) {
 }
 
 function startTimer() {
-  if (gameState.timerInterval) {
-    clearInterval(gameState.timerInterval);
+  // Always clear any pending timer/feedback before starting fresh.
+  stopTimer();
+  if (gameState.feedbackTimeout) {
+    clearTimeout(gameState.feedbackTimeout);
+    gameState.feedbackTimeout = null;
   }
 
   gameState.timerInterval = setInterval(() => {
@@ -222,21 +253,36 @@ function checkViolations(grid, size) {
     rows: Array(size).fill(false),
     cols: Array(size).fill(false),
     cells: Array(size).fill(0).map(() => Array(size).fill(false)),
+    reasons: [],
   };
 
   let hasViolations = false;
   const target = size / 2;
+
+  const flagTriplet = (r, c, direction) => {
+    violations.cells[r][c] = true;
+    violations.cells[r][c - 1] = true;
+    violations.cells[r][c - 2] = true;
+    hasViolations = true;
+    const color = grid[r][c] === CELL_RED ? 'red' : 'blue';
+    violations.reasons.push({
+      type: 'triplet',
+      row: r,
+      col: c,
+      direction,
+      color,
+      start: c - 2,
+      end: c,
+    });
+  };
 
   for (let r = 0; r < size; r++) {
     const row = grid[r];
     for (let c = 0; c < size; c++) {
       const value = row[c];
       if (c >= 2 && value !== CELL_EMPTY && value === row[c - 1] && value === row[c - 2]) {
-        violations.cells[r][c] = true;
-        violations.cells[r][c - 1] = true;
-        violations.cells[r][c - 2] = true;
         violations.rows[r] = true;
-        hasViolations = true;
+        flagTriplet(r, c, 'row');
       }
 
       if (r >= 2 && value !== CELL_EMPTY && value === grid[r - 1][c] && value === grid[r - 2][c]) {
@@ -245,6 +291,16 @@ function checkViolations(grid, size) {
         violations.cells[r - 2][c] = true;
         violations.cols[c] = true;
         hasViolations = true;
+        const color = grid[r][c] === CELL_RED ? 'red' : 'blue';
+        violations.reasons.push({
+          type: 'triplet',
+          row: r,
+          col: c,
+          direction: 'column',
+          color,
+          start: r - 2,
+          end: r,
+        });
       }
     }
 
@@ -254,6 +310,7 @@ function checkViolations(grid, size) {
       if (red !== target || blue !== target) {
         violations.rows[r] = true;
         hasViolations = true;
+        violations.reasons.push({ type: 'count', row: r });
       }
       const rowKey = row.join('');
       for (let other = 0; other < r; other++) {
@@ -261,6 +318,7 @@ function checkViolations(grid, size) {
           violations.rows[r] = true;
           violations.rows[other] = true;
           hasViolations = true;
+          violations.reasons.push({ type: 'uniqueness', row: r, otherRow: other });
         }
       }
     }
@@ -275,6 +333,7 @@ function checkViolations(grid, size) {
       if (red !== target || blue !== target) {
         violations.cols[c] = true;
         hasViolations = true;
+        violations.reasons.push({ type: 'count', col: c });
       }
       const colKey = col.join('');
       for (let other = 0; other < c; other++) {
@@ -282,6 +341,7 @@ function checkViolations(grid, size) {
           violations.cols[c] = true;
           violations.cols[other] = true;
           hasViolations = true;
+          violations.reasons.push({ type: 'uniqueness', col: c, otherCol: other });
         }
       }
     }
@@ -344,7 +404,7 @@ function generateCompleteGrid(size) {
     return false;
   }
 
-  for (let attempt = 0; attempt < 2000; attempt++) {
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) {
         board[r][c] = CELL_EMPTY;
@@ -352,14 +412,18 @@ function generateCompleteGrid(size) {
     }
 
     if (fill(0, 0)) {
+      generationAttemptLog = [];
       return board.map((row) => row.slice());
     }
   }
 
+  console.warn(`generateCompleteGrid failed after ${MAX_ATTEMPTS} attempts for size ${size}`);
+  generationAttemptLog.push(`failed size ${size} after ${MAX_ATTEMPTS} attempts`);
   return null;
 }
 
 function generatePuzzle() {
+  // Clear any active timer/feedback so repeated generation never leaks callbacks.
   stopTimer();
   if (gameState.feedbackTimeout) {
     clearTimeout(gameState.feedbackTimeout);
@@ -375,10 +439,15 @@ function generatePuzzle() {
 
   const completeBoard = generateCompleteGrid(gameState.size);
   if (!completeBoard) {
-    const fallback = Array(gameState.size).fill(0).map(() => Array(gameState.size).fill(CELL_EMPTY));
-    gameState.grid = fallback;
-    gameState.initialGrid = fallback;
+    // Keep the last good board so the user is never left with a blank grid.
+    if (gameState.grid.length === 0) {
+      gameState.grid = Array(gameState.size)
+        .fill(0)
+        .map(() => Array(gameState.size).fill(CELL_EMPTY));
+      gameState.initialGrid = gameState.grid.map((row) => row.slice());
+    }
     renderGrid();
+    updateGame();
     const message = translations[gameState.currentLanguage].puzzleGenerationError;
     const statusEl = document.getElementById('status-message');
     statusEl.textContent = message;
@@ -433,6 +502,100 @@ function updateGame() {
     renderGrid();
     updateStatus();
   }
+  updateHintsDisplay();
+}
+
+function recordMove(r, c, oldValue, newValue) {
+  if (gameState.initialGrid[r] === undefined || gameState.initialGrid[r][c] === undefined) return;
+  if (gameState.initialGrid[r][c] !== CELL_EMPTY) return;
+  gameState.moveHistory.push({ r, c, oldValue, newValue, ts: Date.now() });
+}
+
+function resetGame() {
+  stopTimer();
+  if (gameState.feedbackTimeout) {
+    clearTimeout(gameState.feedbackTimeout);
+    gameState.feedbackTimeout = null;
+  }
+
+  if (gameState.initialGrid.length === 0) return;
+  gameState.grid = gameState.initialGrid.map((row) => row.slice());
+  gameState.moveHistory = [];
+  gameState.selectedCell = null;
+  gameState.hasViolations = false;
+  gameState.isSolved = false;
+  gameState.startTime = Date.now();
+  updateGame();
+  startTimer();
+}
+
+function generateHints() {
+  const { violations } = checkViolations(gameState.grid, gameState.size);
+  if (!violations.reasons || violations.reasons.length === 0) return [];
+
+  const t = translations[gameState.currentLanguage];
+  const hints = [];
+  const seen = new Set();
+
+  for (const reason of violations.reasons) {
+    let key;
+    let text;
+    if (reason.type === 'triplet') {
+      const range = reason.direction === 'row'
+        ? `columns ${reason.start + 1}-${reason.end + 1}`
+        : `rows ${reason.start + 1}-${reason.end + 1}`;
+      key = `triplet-${reason.direction}-${reason.row}-${reason.col}`;
+      text = reason.direction === 'row'
+        ? t.hintTripletRow.replace('{row}', String(reason.row + 1))
+            .replace('{color}', reason.color)
+            .replace('{range}', range)
+        : t.hintTripletCol.replace('{col}', String(reason.col + 1))
+            .replace('{color}', reason.color)
+            .replace('{range}', range);
+    } else if (reason.type === 'count') {
+      if (reason.row !== undefined) {
+        key = `count-row-${reason.row}`;
+        text = t.hintCountRow.replace('{row}', String(reason.row + 1));
+      } else {
+        key = `count-col-${reason.col}`;
+        text = t.hintCountCol.replace('{col}', String(reason.col + 1));
+      }
+    } else if (reason.type === 'uniqueness') {
+      if (reason.row !== undefined) {
+        key = `uniq-row-${reason.row}-${reason.otherRow}`;
+        text = t.hintUniqRow
+          .replace('{row}', String(reason.row + 1))
+          .replace('{otherRow}', String(reason.otherRow + 1));
+      } else {
+        key = `uniq-col-${reason.col}-${reason.otherCol}`;
+        text = t.hintUniqCol
+          .replace('{col}', String(reason.col + 1))
+          .replace('{otherCol}', String(reason.otherCol + 1));
+      }
+    }
+
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      hints.push(text);
+    }
+  }
+
+  return hints.slice(0, 5);
+}
+
+function updateHintsDisplay() {
+  const container = document.getElementById('hints-container');
+  if (!container) return;
+  const hints = generateHints();
+  if (hints.length === 0) {
+    container.classList.add('hidden');
+    container.innerHTML = '';
+    return;
+  }
+
+  const t = translations[gameState.currentLanguage];
+  container.innerHTML = `<ul class="hints-list">${hints.map((hint) => `<li>${hint}</li>`).join('')}</ul>`;
+  container.classList.remove('hidden');
 }
 
 function handleCellClick(r, c) {
@@ -441,7 +604,7 @@ function handleCellClick(r, c) {
   const previousValue = gameState.grid[r][c];
   const nextValue = (previousValue + 1) % 3;
   gameState.selectedCell = { r, c };
-  gameState.moveHistory.push({ r, c, oldValue: previousValue, newValue: nextValue });
+  recordMove(r, c, previousValue, nextValue);
   gameState.grid[r][c] = nextValue;
   updateGame();
 }
@@ -471,9 +634,16 @@ function renderGrid() {
       cell.setAttribute('data-col', String(c));
       cell.setAttribute('tabindex', '0');
       cell.setAttribute('role', 'button');
-      cell.setAttribute('aria-label', `Row ${r + 1}, Column ${c + 1}`);
+      const value = gameState.grid[r][c];
+      cell.setAttribute('aria-pressed', value === CELL_EMPTY ? 'false' : 'true');
 
-      if (gameState.initialGrid[r][c] !== CELL_EMPTY) {
+      const locked = gameState.initialGrid[r][c] !== CELL_EMPTY;
+      const valueName = value === CELL_RED ? 'Red' : value === CELL_BLUE ? 'Blue' : 'Empty';
+      let label = `Row ${r + 1}, Column ${c + 1}, ${valueName}`;
+      if (locked) label += ', Locked';
+      cell.setAttribute('aria-label', label);
+
+      if (locked) {
         cell.classList.add('locked');
       }
 
@@ -485,19 +655,14 @@ function renderGrid() {
         cell.classList.add('violation');
       }
 
-      const value = gameState.grid[r][c];
       if (value === CELL_RED) {
         const circle = document.createElement('div');
         circle.className = 'circle red';
         cell.appendChild(circle);
-        cell.setAttribute('aria-label', `${cell.getAttribute('aria-label')}, Red`);
       } else if (value === CELL_BLUE) {
         const circle = document.createElement('div');
         circle.className = 'circle blue';
         cell.appendChild(circle);
-        cell.setAttribute('aria-label', `${cell.getAttribute('aria-label')}, Blue`);
-      } else {
-        cell.setAttribute('aria-label', `${cell.getAttribute('aria-label')}, Empty`);
       }
 
       cell.addEventListener('click', () => handleCellClick(r, c));
@@ -533,7 +698,7 @@ function updateLanguageUI() {
   const t = translations[gameState.currentLanguage];
 
   document.title = t.title;
-  document.getElementById('title').textContent = t.title;
+  document.getElementById('title').textContent = t.appTitle || t.title;
   document.getElementById('settings-title').textContent = t.settings;
   document.getElementById('language-label').textContent = t.language;
   document.getElementById('label-size').textContent = t.size;
@@ -544,6 +709,7 @@ function updateLanguageUI() {
   document.getElementById('new-game-btn').textContent = t.newGame;
   document.getElementById('reset-btn').textContent = t.reset;
   document.getElementById('undo-btn').textContent = t.undo;
+  document.getElementById('hint-btn').textContent = t.hint;
   document.getElementById('rules-title').textContent = t.howToPlayTitle;
   document.getElementById('instructions').textContent = t.instructions;
   document.getElementById('stat-games-played').textContent = t.gamesPlayed;
@@ -625,17 +791,19 @@ function setupEventListeners() {
   });
 
   document.getElementById('new-game-btn').addEventListener('click', generatePuzzle);
-  document.getElementById('reset-btn').addEventListener('click', () => {
-    if (gameState.initialGrid.length === 0) return;
-    gameState.grid = gameState.initialGrid.map((row) => row.slice());
-    gameState.moveHistory = [];
-    gameState.selectedCell = null;
-    gameState.hasViolations = false;
-    gameState.isSolved = false;
-    gameState.startTime = Date.now();
-    updateGame();
-    startTimer();
+
+  document.getElementById('hint-btn').addEventListener('click', () => {
+    const hints = generateHints();
+    const container = document.getElementById('hints-container');
+    if (hints.length === 0) {
+      container.classList.add('hidden');
+      container.innerHTML = '';
+      return;
+    }
+    container.classList.remove('hidden');
+    container.innerHTML = `<ul class="hints-list">${hints.map((h) => `<li>${h}</li>`).join('')}</ul>`;
   });
+  document.getElementById('reset-btn').addEventListener('click', resetGame);
 
   document.getElementById('undo-btn').addEventListener('click', undoLastMove);
 
@@ -690,7 +858,7 @@ function setupEventListeners() {
         event.preventDefault();
         const value = Number(event.key);
         if (gameState.initialGrid[r] && gameState.initialGrid[r][c] === CELL_EMPTY && gameState.grid[r][c] !== value) {
-          gameState.moveHistory.push({ r, c, oldValue: gameState.grid[r][c], newValue: value });
+          recordMove(r, c, gameState.grid[r][c], value);
           gameState.grid[r][c] = value;
           updateGame();
         }
