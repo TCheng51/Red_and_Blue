@@ -551,7 +551,6 @@ body {
     padding: 12px;
     gap: 6px;
   }
-}
 
   .game-grid {
     gap: 6px;
@@ -572,8 +571,13 @@ body {
   }
 
   .btn {
-    padding: 10px 12px;
-    font-size: 11px;
+    padding: 12px 12px;
+    font-size: 12px;
+    min-height: 44px;
+  }
+
+  .cell:active:not(.locked) {
+    transform: scale(0.95);
   }
 
   .control-group label {
