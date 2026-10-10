@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tango - Binary Puzzle</title>
+    <title>Binary Puzzle - Red and Blue</title>
     <link rel="stylesheet" href="css/style.css" />
     <script src="js/main.js"></script>
   </head>
@@ -20,9 +20,9 @@
       <div class="controls">
         <!-- Settings Panel -->
         <div class="controls-panel settings-panel">
-          <div class="panel-title">⚙️ 設定</div>
+          <div class="panel-title" id="settings-title">⚙️ 設定</div>
           <div class="control-group">
-            <label for="language-select">語言</label>
+            <label for="language-select" id="language-label">語言</label>
             <select id="language-select">
               <option value="zh-tw">繁體中文</option>
               <option value="en">English</option>
@@ -73,6 +73,7 @@
               <span class="stat-label" id="stat-best-time">最佳時間：</span>
               <span class="stat-value" id="best-time">-</span>
             </div>
+            <div id="stats-storage-note" class="stats-storage-note hidden"></div>
           </div>
         </div>
 
@@ -81,6 +82,7 @@
           <button id="new-game-btn" class="btn btn-primary">🎮 新遊戲</button>
           <button id="reset-btn" class="btn btn-secondary">🔄 重置</button>
           <button id="undo-btn" class="btn btn-secondary">↩️ 復原</button>
+          <button id="reset-stats-btn" class="btn btn-secondary">🗑️ 重設統計</button>
         </div>
       </div>
 
@@ -89,6 +91,7 @@
 
       <!-- Status Message -->
       <div id="status-message" class="status-message hidden"></div>
+      <div id="sr-live" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
       <!-- Hints Section -->
       <div id="hints-container" class="hints-container hidden"></div>

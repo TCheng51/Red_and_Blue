@@ -1,24 +1,20 @@
 :root {
-  /* LinkedIn Tango Colors */
   --primary-blue: #0073b1;
   --light-blue: #e7f3ff;
   --hover-blue: #004182;
   --success-green: #31a24c;
   --error-red: #e74c3c;
   --warning-orange: #f39c12;
-  
-  /* Neutral Colors */
   --white: #ffffff;
   --light-gray: #f5f5f5;
   --medium-gray: #d0d0d0;
   --dark-gray: #666666;
   --dark-text: #262626;
   --border-gray: #e0e0e0;
-  
-  /* Game-specific */
   --cell-red: #ee5a52;
   --cell-blue: #0073b1;
   --cell-empty: #f5f5f5;
+  --cell-size: clamp(36px, 6vw, 64px);
 }
 
 * {
@@ -35,7 +31,18 @@ body {
   color: var(--dark-text);
 }
 
-/* Custom scrollbar styling */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 ::-webkit-scrollbar {
   width: 10px;
 }
@@ -54,11 +61,10 @@ body {
 }
 
 .container {
-  max-width: 900px;
+  max-width: 980px;
   margin: 0 auto;
 }
 
-/* Header */
 .header {
   background: var(--white);
   border-radius: 8px;
@@ -84,7 +90,6 @@ body {
   background: var(--primary-blue);
 }
 
-/* Controls */
 .controls {
   background: var(--light-gray);
   border-radius: 8px;
@@ -116,14 +121,12 @@ body {
 }
 
 .settings-panel {
-  grid-column: auto;
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
 .timer-panel {
-  grid-column: auto;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -133,7 +136,6 @@ body {
 }
 
 .stats-panel {
-  grid-column: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -168,6 +170,13 @@ body {
   color: var(--primary-blue);
 }
 
+.stats-storage-note {
+  font-size: 11px;
+  color: var(--dark-gray);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
 .timer-display {
   text-align: center;
 }
@@ -186,7 +195,6 @@ body {
 }
 
 .actions-panel {
-  grid-column: auto;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -229,7 +237,6 @@ body {
   border-color: var(--primary-blue);
 }
 
-/* Buttons */
 .btn {
   padding: 10px 14px;
   font-size: 12px;
@@ -240,6 +247,7 @@ body {
   transition: all 0.2s ease;
   color: white;
   width: 100%;
+  min-height: 42px;
 }
 
 .btn:hover {
@@ -275,7 +283,6 @@ body {
   background: #4a4a4a;
 }
 
-/* Status Message */
 .status-message {
   margin: 16px 0;
   padding: 14px;
@@ -302,7 +309,6 @@ body {
   color: white;
 }
 
-/* Game Grid */
 .game-grid {
   display: grid;
   gap: 8px;
@@ -313,8 +319,8 @@ body {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   margin: 0 auto 24px auto;
   width: fit-content;
-  /* Dynamic cell sizing based on grid size */
-  --cell-size: clamp(45px, min(8vw, 70px), 70px);
+  max-width: 100%;
+  overflow: auto;
 }
 
 .cell {
@@ -328,11 +334,18 @@ body {
   cursor: pointer;
   border-radius: 6px;
   transition: all 0.15s ease;
+  min-width: 36px;
+  min-height: 36px;
+  padding: 4px;
 }
 
 .cell:hover:not(.locked) {
   border-color: var(--primary-blue);
   box-shadow: 0 2px 8px rgba(0, 115, 177, 0.15);
+}
+
+.cell:active:not(.locked) {
+  transform: scale(0.97);
 }
 
 .cell:focus {
@@ -364,11 +377,11 @@ body {
 }
 
 .circle {
-  width: calc(var(--cell-size) * 0.75);
-  height: calc(var(--cell-size) * 0.75);
+  width: calc(var(--cell-size) * 0.72);
+  height: calc(var(--cell-size) * 0.72);
   position: relative;
   border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.12);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -378,11 +391,29 @@ body {
   background: var(--cell-red);
 }
 
+.circle.red::before {
+  content: "";
+  width: 28%;
+  height: 28%;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  display: block;
+}
+
 .circle.blue {
   background: var(--cell-blue);
 }
 
-/* Rules Section */
+.circle.blue::before {
+  content: "";
+  width: 34%;
+  height: 34%;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+  display: block;
+  background: transparent;
+}
+
 .rules-section {
   background-color: var(--light-gray);
   border: 1px solid var(--border-gray);
@@ -448,7 +479,6 @@ body {
   color: var(--primary-blue);
 }
 
-/* Hints Container */
 .hints-container {
   margin: 12px 0;
   padding: 12px;
@@ -480,7 +510,6 @@ body {
   margin-bottom: 0;
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .controls {
     grid-template-columns: 1fr;
@@ -517,6 +546,12 @@ body {
   .timer-value {
     font-size: 20px;
   }
+
+  .game-grid {
+    padding: 12px;
+    gap: 6px;
+  }
+}
 
   .game-grid {
     gap: 6px;

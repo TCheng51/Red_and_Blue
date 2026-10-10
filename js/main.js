@@ -3,169 +3,191 @@ const CELL_EMPTY = 0;
 const CELL_RED = 1;
 const CELL_BLUE = 2;
 
-// Game State
-let gameState = {
+function storageAvailable() {
+  try {
+    const storage = typeof window !== 'undefined' ? window.localStorage : null;
+    if (!storage) return false;
+    const key = '__puzzle_storage_test__';
+    storage.setItem(key, '1');
+    storage.removeItem(key);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+const gameState = {
   size: 6,
-  difficulty: "medium",
+  difficulty: 'medium',
   grid: [],
   initialGrid: [],
-  violations: { rows: [], cols: [], cells: [] },
+  violations: {
+    rows: Array(6).fill(false),
+    cols: Array(6).fill(false),
+    cells: Array(6).fill(0).map(() => Array(6).fill(false)),
+  },
   hasViolations: false,
   isSolved: false,
-  currentLanguage: "zh-tw",
+  currentLanguage: 'zh-tw',
   startTime: null,
   elapsedTime: 0,
-  violationMessageTimeout: null,
   moveHistory: [],
-  stats: {
-    gamesPlayed: 0,
-    gamesWon: 0,
-    bestTime: null,
-  },
+  stats: { gamesPlayed: 0, gamesWon: 0, bestTime: null },
   selectedCell: null,
   timerInterval: null,
   feedbackTimeout: null,
+  storageAvailable: storageAvailable(),
 };
 
-// Translations
 const translations = {
   en: {
-    languageName: "English",
-    title: "Binary Puzzle - Red & Blue",
-    size: "Size:",
-    difficulty: "Difficulty:",
-    easy: "Easy",
-    medium: "Medium",
-    hard: "Hard",
-    newGame: "New Game",
-    reset: "Reset",
-    hint: "Hint",
-    undo: "Undo",
-    stats: "Stats",
-    gamesPlayed: "Games Played:",
-    gamesWon: "Games Won:",
-    bestTime: "Best Time:",
-    solvedMessage: "Congratulations! You solved the puzzle! 🎉",
-    solvedMessageWithTime:
-      "Congratulations! You solved the puzzle in {time} seconds! 🎉",
-    violationMessage: "There are violations in the grid. Keep going!",
-    hintTriplet: "⚠ Three or more same colors in a row",
-    hintColor: "⚠ Too many of the same color in this row/column",
-    hintDuplicate: "⚠ This row/column is identical to another",
-    howToPlayTitle: "How to Play Binary Puzzle:",
-    instructions:
-      "Click on a cell or use arrow keys to select, then click/press number to fill (1=Red, 2=Blue, 0=Empty). Locked cells have a gray background.",
+    settings: '⚙️ Settings',
+    language: 'Language',
+    title: 'Binary Puzzle - Red and Blue',
+    size: 'Size:',
+    difficulty: 'Difficulty:',
+    easy: 'Easy',
+    medium: 'Medium',
+    hard: 'Hard',
+    newGame: 'New Game',
+    reset: 'Reset',
+    undo: 'Undo',
+    resetStats: 'Reset stats',
+    storageUnavailable: 'Stats are stored in memory only while localStorage is blocked.',
+    gamesPlayed: 'Games Played:',
+    gamesWon: 'Games Won:',
+    bestTime: 'Best Time:',
+    solvedMessage: 'Congratulations! You solved the puzzle! 🎉',
+    solvedMessageWithTime: 'Congratulations! You solved the puzzle in {time} seconds! 🎉',
+    violationMessage: 'There are violations in the grid. Keep going!',
+    puzzleGenerationError: 'Puzzle generation failed. Please try a fresh board.',
+    howToPlayTitle: 'How to Play Binary Puzzle:',
+    instructions: 'Click on a cell or use arrow keys to select, then click/press number to fill (1=Red, 2=Blue, 0=Empty). Locked cells have a gray background. Highlighted areas indicate rule violations.',
+    rules: [
+      'Fill each empty cell with a red or blue circle.',
+      'Any row or column must not have <strong>more than two adjacent circles of the same color</strong>.',
+      'Each row and column must contain the same number of red and blue circles <strong>only when fully filled</strong> and only for even-sized grids.',
+      'All rows must be <strong>unique</strong>; no two rows can share the same circle pattern.',
+      'All columns must be <strong>unique</strong>; no two columns can share the same circle pattern.'
+    ],
   },
-  "zh-tw": {
-    languageName: "繁體中文",
-    title: "二進制拼圖-紅藍",
-    size: "大小：",
-    difficulty: "難度：",
-    easy: "簡單",
-    medium: "中等",
-    hard: "困難",
-    newGame: "新遊戲",
-    reset: "重置",
-    hint: "提示",
-    undo: "復原",
-    stats: "統計",
-    gamesPlayed: "遊戲次數：",
-    gamesWon: "勝利次數：",
-    bestTime: "最佳時間：",
-    solvedMessage: "恭喜！您解決了拼圖！🎉",
-    solvedMessageWithTime: "恭喜！您用 {time} 秒解決了拼圖！🎉",
-    violationMessage: "網格中存在違規。請繼續！",
-    hintTriplet: "⚠ 一行或一列中有三個或以上相同顏色",
-    hintColor: "⚠ 這行或這列的同一顏色過多",
-    hintDuplicate: "⚠ 這行或這列與另一行/列相同",
-    howToPlayTitle: "二進制拼圖玩法說明：",
-    instructions:
-      "點擊格子或使用方向鍵選擇，然後點擊/按數字填入（1=紅色、2=藍色、0=空白）。灰色背景的方塊是初始拼圖，無法更改。",
+  'zh-tw': {
+    settings: '⚙️ 設定',
+    language: '語言',
+    title: 'Binary Puzzle - Red and Blue',
+    size: '大小：',
+    difficulty: '難度：',
+    easy: '簡單',
+    medium: '中等',
+    hard: '困難',
+    newGame: '新遊戲',
+    reset: '重置',
+    undo: '復原',
+    resetStats: '重設統計',
+    storageUnavailable: '目前瀏覽器無法使用 localStorage，統計資料只保存在記憶體中。',
+    gamesPlayed: '遊戲次數：',
+    gamesWon: '勝利次數：',
+    bestTime: '最佳時間：',
+    solvedMessage: '恭喜！您解決了拼圖！🎉',
+    solvedMessageWithTime: '恭喜！您用 {time} 秒解決了拼圖！🎉',
+    violationMessage: '網格中存在違規。請繼續！',
+    puzzleGenerationError: '拼圖生成失敗，請再試一次新局。',
+    howToPlayTitle: '二進制拼圖玩法說明：',
+    instructions: '點擊格子或使用方向鍵選擇，然後點擊/按數字填入（1=紅色、2=藍色、0=空白）。灰色背景的方塊是初始拼圖，無法更改。高亮區域表示規則違規。',
+    rules: [
+      '將每個空格填入紅色或藍色圓圈。',
+      '任何行或列中，<strong>不能有超過兩個相同顏色的相鄰圓圈</strong>。',
+      '每個行和每個列必須包含<strong>相同數量的紅色和藍色圓圈</strong>（此規則僅適用於偶數大小的網格，且僅當該行/列完全填滿時）。',
+      '所有行必須是<strong>唯一</strong>的。沒有兩行可以有完全相同的圓圈模式。',
+      '所有列必須是<strong>唯一</strong>的。沒有兩列可以有完全相同的圓圈模式。'
+    ],
   },
-  "zh-cn": {
-    languageName: "简体中文",
-    title: "二进制拼图-红蓝",
-    size: "大小：",
-    difficulty: "难度：",
-    easy: "简单",
-    medium: "中等",
-    hard: "困难",
-    newGame: "新游戏",
-    reset: "重置",
-    hint: "提示",
-    undo: "撤销",
-    stats: "统计",
-    gamesPlayed: "游戏次数：",
-    gamesWon: "胜利次数：",
-    bestTime: "最佳时间：",
-    solvedMessage: "恭喜！您解决了拼图！🎉",
-    solvedMessageWithTime: "恭喜！您用 {time} 秒解决了拼图！🎉",
-    violationMessage: "网格中存在违规。请继续！",
-    hintTriplet: "⚠ 一行或一列中有三个或以上相同颜色",
-    hintColor: "⚠ 这行或这列的同一颜色过多",
-    hintDuplicate: "⚠ 这行或这列与另一行/列相同",
-    howToPlayTitle: "二进制拼图玩法说明：",
-    instructions:
-      "点击格子或使用方向键选择，然后点击/按数字填入（1=红色、2=蓝色、0=空白）。灰色背景的方块是初始拼图，无法更改。",
+  'zh-cn': {
+    settings: '⚙️ 设置',
+    language: '语言',
+    title: 'Binary Puzzle - Red and Blue',
+    size: '大小：',
+    difficulty: '难度：',
+    easy: '简单',
+    medium: '中等',
+    hard: '困难',
+    newGame: '新游戏',
+    reset: '重置',
+    undo: '撤销',
+    resetStats: '重设统计',
+    storageUnavailable: '当前浏览器无法使用 localStorage，统计数据只保存在内存中。',
+    gamesPlayed: '游戏次数：',
+    gamesWon: '胜利次数：',
+    bestTime: '最佳时间：',
+    solvedMessage: '恭喜！您解决了拼图！🎉',
+    solvedMessageWithTime: '恭喜！您用 {time} 秒解决了拼图！🎉',
+    violationMessage: '网格中存在违规。请继续！',
+    puzzleGenerationError: '拼图生成失败，请再试一次新局。',
+    howToPlayTitle: '二进制拼图玩法说明：',
+    instructions: '点击格子或使用方向键选择，然后点击/按数字填入（1=红色、2=蓝色、0=空白）。灰色背景的方块是初始拼图，无法更改。高亮区域表示规则违规。',
+    rules: [
+      '将每个空格填入红色或蓝色圆圈。',
+      '任何行或列中，<strong>不能有超过两个相同颜色的相邻圆圈</strong>。',
+      '每个行和每列必须包含<strong>相同数量的红色和蓝色圆圈</strong>（此规则仅适用于偶数大小的网格，且仅当该行/列完全填满时）。',
+      '所有行必须是<strong>唯一</strong>的。没有两行可以有完全相同的圆圈模式。',
+      '所有列必须是<strong>唯一</strong>的。没有两列可以有完全相同的圆圈模式。'
+    ],
   },
 };
 
-// Utility Functions
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-/**
- * Format elapsed time from milliseconds to seconds
- */
-function formatTime(milliseconds) {
-  return Math.floor(milliseconds / 1000);
+function formatTime(ms) {
+  return Math.floor(ms / 1000);
 }
 
-/**
- * Load game statistics from localStorage
- */
 function loadStats() {
+  if (!gameState.storageAvailable) {
+    return {
+      gamesPlayed: gameState.stats?.gamesPlayed || 0,
+      gamesWon: gameState.stats?.gamesWon || 0,
+      bestTime: gameState.stats?.bestTime || null,
+    };
+  }
+
   try {
-    const saved = localStorage.getItem("puzzleStats");
-    return saved
-      ? JSON.parse(saved)
-      : { gamesPlayed: 0, gamesWon: 0, bestTime: null };
+    const saved = window.localStorage.getItem('puzzleStats');
+    return saved ? JSON.parse(saved) : { gamesPlayed: 0, gamesWon: 0, bestTime: null };
   } catch (error) {
-    console.error("Error loading stats from localStorage:", error);
+    console.error('Failed to load stats:', error);
     return { gamesPlayed: 0, gamesWon: 0, bestTime: null };
   }
 }
 
-/**
- * Save game statistics to localStorage
- */
 function saveStats(stats) {
+  if (!gameState.storageAvailable) {
+    gameState.stats = stats;
+    return;
+  }
+
   try {
-    localStorage.setItem("puzzleStats", JSON.stringify(stats));
+    window.localStorage.setItem('puzzleStats', JSON.stringify(stats));
   } catch (error) {
-    console.error("Error saving stats to localStorage:", error);
+    console.error('Failed to save stats:', error);
   }
 }
 
-/**
- * Start the game timer
- */
 function startTimer() {
-  if (gameState.timerInterval) clearInterval(gameState.timerInterval);
+  if (gameState.timerInterval) {
+    clearInterval(gameState.timerInterval);
+  }
+
   gameState.timerInterval = setInterval(() => {
     const elapsed = Date.now() - gameState.startTime;
-    const seconds = Math.floor(elapsed / 1000);
-    const timerElement = document.getElementById("timer");
-    if (timerElement) {
-      timerElement.textContent = `${seconds}s`;
+    const timerEl = document.getElementById('timer');
+    if (timerEl) {
+      timerEl.textContent = `${Math.floor(elapsed / 1000)}s`;
     }
   }, 1000);
 }
 
-/**
- * Stop the game timer
- */
 function stopTimer() {
   if (gameState.timerInterval) {
     clearInterval(gameState.timerInterval);
@@ -173,278 +195,93 @@ function stopTimer() {
   }
 }
 
-/**
- * Add a move to history for undo functionality
- */
-function recordMove(r, c, newValue) {
-  gameState.moveHistory.push({ r, c, newValue });
+function initGameState() {
+  gameState.violations = {
+    rows: Array(gameState.size).fill(false),
+    cols: Array(gameState.size).fill(false),
+    cells: Array(gameState.size).fill(0).map(() => Array(gameState.size).fill(false)),
+  };
+  gameState.moveHistory = [];
+  gameState.selectedCell = null;
+  gameState.hasViolations = false;
+  gameState.isSolved = false;
 }
 
-/**
- * Undo the last move
- */
-function undoLastMove() {
-  if (gameState.moveHistory.length === 0) return;
-
-  const move = gameState.moveHistory.pop();
-  // Store the old value before the move was made
-  const oldValue = (move.newValue + 2) % 3; // Cycle backwards: 1->0, 2->1, 0->2
-  if (gameState.initialGrid[move.r][move.c] === CELL_EMPTY) {
-    gameState.grid[move.r][move.c] = oldValue;
-    updateGame();
-  }
+function getRowBalance(row) {
+  const red = row.filter((v) => v === CELL_RED).length;
+  const blue = row.filter((v) => v === CELL_BLUE).length;
+  return { red, blue };
 }
 
-/**
- * Generate hints based on detected violations
- */
-function generateHints() {
-  const t = translations[gameState.currentLanguage];
-  const hints = new Set();
-  const grid = gameState.grid;
-  const size = gameState.size;
-  const violations = gameState.violations;
-  const targetCount = size / 2;
-
-  // Check for three-in-a-row violations
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size - 2; c++) {
-      if (
-        violations.cells[r][c] &&
-        grid[r][c] !== CELL_EMPTY &&
-        grid[r][c] === grid[r][c + 1] &&
-        grid[r][c] === grid[r][c + 2]
-      ) {
-        hints.add(t.hintTriplet);
-        break;
-      }
-    }
-  }
-
-  for (let c = 0; c < size; c++) {
-    for (let r = 0; r < size - 2; r++) {
-      if (
-        violations.cells[r][c] &&
-        grid[r][c] !== CELL_EMPTY &&
-        grid[r][c] === grid[r + 1][c] &&
-        grid[r][c] === grid[r + 2][c]
-      ) {
-        hints.add(t.hintTriplet);
-        break;
-      }
-    }
-  }
-
-  // Check for too many same color violations
-  for (let r = 0; r < size; r++) {
-    if (violations.rows[r]) {
-      let isFull = true;
-      let redCount = 0,
-        blueCount = 0;
-      for (let c = 0; c < size; c++) {
-        if (grid[r][c] === CELL_EMPTY) isFull = false;
-        if (grid[r][c] === CELL_RED) redCount++;
-        if (grid[r][c] === CELL_BLUE) blueCount++;
-      }
-      if (
-        isFull &&
-        size % 2 === 0 &&
-        (redCount !== targetCount || blueCount !== targetCount)
-      ) {
-        hints.add(t.hintColor);
-      }
-    }
-  }
-
-  for (let c = 0; c < size; c++) {
-    if (violations.cols[c]) {
-      let isFull = true;
-      let redCount = 0,
-        blueCount = 0;
-      for (let r = 0; r < size; r++) {
-        if (grid[r][c] === CELL_EMPTY) isFull = false;
-        if (grid[r][c] === CELL_RED) redCount++;
-        if (grid[r][c] === CELL_BLUE) blueCount++;
-      }
-      if (
-        isFull &&
-        size % 2 === 0 &&
-        (redCount !== targetCount || blueCount !== targetCount)
-      ) {
-        hints.add(t.hintColor);
-      }
-    }
-  }
-
-  // Check for duplicate row/column violations
-  for (let r = 0; r < size; r++) {
-    if (violations.rows[r]) {
-      let rowIsFull = true;
-      for (let c = 0; c < size; c++) {
-        if (grid[r][c] === CELL_EMPTY) rowIsFull = false;
-      }
-      if (rowIsFull) {
-        hints.add(t.hintDuplicate);
-      }
-    }
-  }
-
-  for (let c = 0; c < size; c++) {
-    if (violations.cols[c]) {
-      let colIsFull = true;
-      for (let r = 0; r < size; r++) {
-        if (grid[r][c] === CELL_EMPTY) colIsFull = false;
-      }
-      if (colIsFull) {
-        hints.add(t.hintDuplicate);
-      }
-    }
-  }
-
-  return Array.from(hints);
+function getColumn(grid, c) {
+  return grid.map((row) => row[c]);
 }
 
-/**
- * Display hints with formatted HTML
- */
-function displayHints(hints) {
-  const hintsContainer = document.getElementById("hints-container");
-  hintsContainer.innerHTML = "";
-
-  if (hints.length > 0) {
-    const hintsList = document.createElement("ul");
-    hintsList.className = "hints-list";
-    hints.forEach((hint) => {
-      const li = document.createElement("li");
-      li.textContent = hint;
-      hintsList.appendChild(li);
-    });
-    hintsContainer.appendChild(hintsList);
-    hintsContainer.classList.remove("hidden");
-  } else {
-    hintsContainer.classList.add("hidden");
-  }
-}
-/**
- * Check for violations in the current grid
- */
 function checkViolations(grid, size) {
   const violations = {
     rows: Array(size).fill(false),
     cols: Array(size).fill(false),
-    cells: Array(size)
-      .fill(0)
-      .map(() => Array(size).fill(false)),
+    cells: Array(size).fill(0).map(() => Array(size).fill(false)),
   };
+
   let hasViolations = false;
+  const target = size / 2;
 
-  const targetCount = size / 2;
-  const rowStrings = new Map();
-  const colStrings = Array(size)
-    .fill(0)
-    .map(() => []);
-
-  // Check rows
   for (let r = 0; r < size; r++) {
-    let redCountRow = 0;
-    let blueCountRow = 0;
-    let currentRowString = "";
-    let rowIsFull = true;
-
+    const row = grid[r];
     for (let c = 0; c < size; c++) {
-      const cell = grid[r][c];
-      currentRowString += cell;
-      colStrings[c].push(cell);
-
-      if (cell === CELL_RED) redCountRow++;
-      else if (cell === CELL_BLUE) blueCountRow++;
-      else rowIsFull = false;
-
-      // Check horizontal triplets
-      if (c >= 2) {
-        if (
-          cell !== CELL_EMPTY &&
-          cell === grid[r][c - 1] &&
-          cell === grid[r][c - 2]
-        ) {
-          violations.cells[r][c] = true;
-          violations.cells[r][c - 1] = true;
-          violations.cells[r][c - 2] = true;
-          violations.rows[r] = true;
-          hasViolations = true;
-        }
-      }
-
-      // Check vertical triplets
-      if (r >= 2) {
-        if (
-          cell !== CELL_EMPTY &&
-          cell === grid[r - 1][c] &&
-          cell === grid[r - 2][c]
-        ) {
-          violations.cells[r][c] = true;
-          violations.cells[r - 1][c] = true;
-          violations.cells[r - 2][c] = true;
-          violations.cols[c] = true;
-          hasViolations = true;
-        }
-      }
-    }
-
-    if (rowIsFull) {
-      if (
-        size % 2 === 0 &&
-        (redCountRow !== targetCount || blueCountRow !== targetCount)
-      ) {
+      const value = row[c];
+      if (c >= 2 && value !== CELL_EMPTY && value === row[c - 1] && value === row[c - 2]) {
+        violations.cells[r][c] = true;
+        violations.cells[r][c - 1] = true;
+        violations.cells[r][c - 2] = true;
         violations.rows[r] = true;
         hasViolations = true;
       }
 
-      if (!violations.rows[r]) {
-        if (rowStrings.has(currentRowString)) {
+      if (r >= 2 && value !== CELL_EMPTY && value === grid[r - 1][c] && value === grid[r - 2][c]) {
+        violations.cells[r][c] = true;
+        violations.cells[r - 1][c] = true;
+        violations.cells[r - 2][c] = true;
+        violations.cols[c] = true;
+        hasViolations = true;
+      }
+    }
+
+    const rowFull = row.every((cell) => cell !== CELL_EMPTY);
+    if (rowFull) {
+      const { red, blue } = getRowBalance(row);
+      if (red !== target || blue !== target) {
+        violations.rows[r] = true;
+        hasViolations = true;
+      }
+      const rowKey = row.join('');
+      for (let other = 0; other < r; other++) {
+        if (grid[other].join('') === rowKey) {
           violations.rows[r] = true;
-          violations.rows[rowStrings.get(currentRowString)] = true;
+          violations.rows[other] = true;
           hasViolations = true;
-        } else {
-          rowStrings.set(currentRowString, r);
         }
       }
     }
   }
 
-  // Check columns
-  const colSet = new Map();
   for (let c = 0; c < size; c++) {
-    const currentColArray = colStrings[c];
-    let redCountCol = 0;
-    let blueCountCol = 0;
-    let currentColString = "";
-    let colIsFull = true;
-
-    for (let r = 0; r < size; r++) {
-      const cell = currentColArray[r];
-      currentColString += cell;
-      if (cell === CELL_RED) redCountCol++;
-      else if (cell === CELL_BLUE) blueCountCol++;
-      else colIsFull = false;
-    }
-
-    if (colIsFull) {
-      if (
-        size % 2 === 0 &&
-        (redCountCol !== targetCount || blueCountCol !== targetCount)
-      ) {
+    const col = getColumn(grid, c);
+    const colFull = col.every((cell) => cell !== CELL_EMPTY);
+    if (colFull) {
+      const red = col.filter((value) => value === CELL_RED).length;
+      const blue = col.filter((value) => value === CELL_BLUE).length;
+      if (red !== target || blue !== target) {
         violations.cols[c] = true;
         hasViolations = true;
       }
-
-      if (!violations.cols[c]) {
-        if (colSet.has(currentColString)) {
+      const colKey = col.join('');
+      for (let other = 0; other < c; other++) {
+        if (getColumn(grid, other).join('') === colKey) {
           violations.cols[c] = true;
-          violations.cols[colSet.get(currentColString)] = true;
+          violations.cols[other] = true;
           hasViolations = true;
-        } else {
-          colSet.set(currentColString, c);
         }
       }
     }
@@ -453,540 +290,365 @@ function checkViolations(grid, size) {
   return { violations, hasViolations };
 }
 
-/**
- * Generate a complete valid Binary Puzzle grid using backtracking
- */
 function generateCompleteGrid(size) {
-  const grid = Array(size)
-    .fill(0)
-    .map(() => Array(size).fill(CELL_EMPTY));
-  const targetCount = size / 2;
+  const board = Array(size).fill(0).map(() => Array(size).fill(CELL_EMPTY));
+  const target = size / 2;
 
-  const solve = (r, c) => {
+  function isValidPlacement(r, c, value) {
+    if (c >= 2 && value !== CELL_EMPTY && value === board[r][c - 1] && value === board[r][c - 2]) return false;
+    if (r >= 2 && value !== CELL_EMPTY && value === board[r - 1][c] && value === board[r - 2][c]) return false;
+
+    const row = board[r];
+    const col = board.map((rowValues) => rowValues[c]);
+    const rowFilled = row.every((cell) => cell !== CELL_EMPTY);
+    const colFilled = col.every((cell) => cell !== CELL_EMPTY);
+
+    if (rowFilled) {
+      const red = row.filter((cell) => cell === CELL_RED).length;
+      const blue = row.filter((cell) => cell === CELL_BLUE).length;
+      if (red !== target || blue !== target) return false;
+      for (let otherR = 0; otherR < r; otherR++) {
+        if (board[otherR].join('') === row.join('')) return false;
+      }
+    }
+
+    if (colFilled) {
+      const red = col.filter((cell) => cell === CELL_RED).length;
+      const blue = col.filter((cell) => cell === CELL_BLUE).length;
+      if (red !== target || blue !== target) return false;
+      for (let otherC = 0; otherC < c; otherC++) {
+        const otherCol = board.map((rowValues) => rowValues[otherC]);
+        if (otherCol.join('') === col.join('')) return false;
+      }
+    }
+
+    return true;
+  }
+
+  function fill(r, c) {
     if (r === size) return true;
-
     const nextR = c === size - 1 ? r + 1 : r;
     const nextC = c === size - 1 ? 0 : c + 1;
 
-    const colors = [CELL_RED, CELL_BLUE];
-    if (Math.random() < 0.5) colors.reverse();
+    const values = [CELL_RED, CELL_BLUE];
+    if (Math.random() < 0.5) values.reverse();
 
-    for (const color of colors) {
-      grid[r][c] = color;
-
-      let tripletViolation = false;
-      if (
-        c >= 2 &&
-        grid[r][c] === grid[r][c - 1] &&
-        grid[r][c] === grid[r][c - 2]
-      )
-        tripletViolation = true;
-      if (
-        r >= 2 &&
-        grid[r][c] === grid[r - 1][c] &&
-        grid[r][c] === grid[r - 2][c]
-      )
-        tripletViolation = true;
-
-      if (tripletViolation) {
-        grid[r][c] = CELL_EMPTY;
-        continue;
+    for (const value of values) {
+      board[r][c] = value;
+      if (isValidPlacement(r, c, value) && fill(nextR, nextC)) {
+        return true;
       }
-
-      let rowIsFull = true;
-      let colIsFull = true;
-      for (let i = 0; i < size; i++) {
-        if (grid[r][i] === CELL_EMPTY) rowIsFull = false;
-        if (grid[i][c] === CELL_EMPTY) colIsFull = false;
-      }
-
-      if (rowIsFull && size % 2 === 0) {
-        let redCount = 0,
-          blueCount = 0;
-        for (let i = 0; i < size; i++) {
-          if (grid[r][i] === CELL_RED) redCount++;
-          if (grid[r][i] === CELL_BLUE) blueCount++;
-        }
-        if (redCount !== targetCount || blueCount !== targetCount) {
-          grid[r][c] = CELL_EMPTY;
-          continue;
-        }
-
-        let currentRowString = "";
-        for (let i = 0; i < size; i++) currentRowString += grid[r][i];
-        let isRowUnique = true;
-        for (let prevR = 0; prevR < r; prevR++) {
-          let prevRowString = "";
-          for (let i = 0; i < size; i++) prevRowString += grid[prevR][i];
-          if (prevRowString === currentRowString) {
-            isRowUnique = false;
-            break;
-          }
-        }
-        if (!isRowUnique) {
-          grid[r][c] = CELL_EMPTY;
-          continue;
-        }
-      }
-
-      if (colIsFull && size % 2 === 0) {
-        let redCount = 0,
-          blueCount = 0;
-        for (let i = 0; i < size; i++) {
-          if (grid[i][c] === CELL_RED) redCount++;
-          if (grid[i][c] === CELL_BLUE) blueCount++;
-        }
-        if (redCount !== targetCount || blueCount !== targetCount) {
-          grid[r][c] = CELL_EMPTY;
-          continue;
-        }
-
-        let currentColString = "";
-        for (let i = 0; i < size; i++) currentColString += grid[i][c];
-        let isColUnique = true;
-        for (let prevC = 0; prevC < c; prevC++) {
-          let prevColString = "";
-          for (let i = 0; i < size; i++) prevColString += grid[i][prevC];
-          if (prevColString === currentColString) {
-            isColUnique = false;
-            break;
-          }
-        }
-        if (!isColUnique) {
-          grid[r][c] = CELL_EMPTY;
-          continue;
-        }
-      }
-
-      if (solve(nextR, nextC)) return true;
-      grid[r][c] = CELL_EMPTY;
+      board[r][c] = CELL_EMPTY;
     }
+
     return false;
-  };
-
-  let attempts = 0;
-  const MAX_ATTEMPTS = 100;
-  while (attempts < MAX_ATTEMPTS) {
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        grid[r][c] = CELL_EMPTY;
-      }
-    }
-    if (solve(0, 0)) return grid;
-    attempts++;
   }
 
-  return Array(size)
-    .fill(0)
-    .map(() => Array(size).fill(CELL_EMPTY));
+  for (let attempt = 0; attempt < 2000; attempt++) {
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        board[r][c] = CELL_EMPTY;
+      }
+    }
+
+    if (fill(0, 0)) {
+      return board.map((row) => row.slice());
+    }
+  }
+
+  return null;
 }
 
-/**
- * Generate new puzzle based on size and difficulty
- */
 function generatePuzzle() {
   stopTimer();
-
-  // Clear any pending feedback timeout
   if (gameState.feedbackTimeout) {
     clearTimeout(gameState.feedbackTimeout);
     gameState.feedbackTimeout = null;
   }
 
-  const size = gameState.size;
-  const difficulty = gameState.difficulty;
-
-  gameState.isSolved = false;
-  gameState.hasViolations = false;
-  gameState.moveHistory = [];
-  gameState.selectedCell = null;
+  initGameState();
   gameState.startTime = Date.now();
-  gameState.elapsedTime = 0;
   gameState.stats = loadStats();
-  gameState.stats.gamesPlayed++;
+  gameState.stats.gamesPlayed += 1;
   saveStats(gameState.stats);
   updateStatsDisplay();
 
-  gameState.violations = {
-    rows: Array(size).fill(false),
-    cols: Array(size).fill(false),
-    cells: Array(size)
-      .fill(0)
-      .map(() => Array(size).fill(false)),
-  };
-
-  const completeGrid = generateCompleteGrid(size);
-  if (!completeGrid || completeGrid[0][0] === CELL_EMPTY) {
-    gameState.grid = Array(size)
-      .fill(0)
-      .map(() => Array(size).fill(CELL_EMPTY));
-    gameState.initialGrid = Array(size)
-      .fill(0)
-      .map(() => Array(size).fill(CELL_EMPTY));
+  const completeBoard = generateCompleteGrid(gameState.size);
+  if (!completeBoard) {
+    const fallback = Array(gameState.size).fill(0).map(() => Array(gameState.size).fill(CELL_EMPTY));
+    gameState.grid = fallback;
+    gameState.initialGrid = fallback;
     renderGrid();
-    updateStatus();
+    const message = translations[gameState.currentLanguage].puzzleGenerationError;
+    const statusEl = document.getElementById('status-message');
+    statusEl.textContent = message;
+    statusEl.className = 'status-message warning';
+    statusEl.classList.remove('hidden');
+    const live = document.getElementById('sr-live');
+    if (live) live.textContent = message;
     return;
   }
 
-  const getCellsToHidePercentage = (difficulty) => {
-    switch (difficulty) {
-      case "easy":
-        return 0.3;
-      case "medium":
-        return 0.5;
-      case "hard":
-        return 0.7;
-      default:
-        return 0.5;
-    }
-  };
+  const hideRatio = {
+    easy: 0.3,
+    medium: 0.5,
+    hard: 0.7,
+  }[gameState.difficulty] || 0.5;
 
-  const cellsToHide = Math.floor(
-    size * size * getCellsToHidePercentage(difficulty),
-  );
-  const newGrid = JSON.parse(JSON.stringify(completeGrid));
-  const newInitialGrid = Array(size)
-    .fill(0)
-    .map(() => Array(size).fill(CELL_EMPTY));
+  const board = completeBoard.map((row) => row.slice());
+  const cellsToHide = Math.floor(gameState.size * gameState.size * hideRatio);
+  let hidden = 0;
 
-  let hiddenCount = 0;
-  while (hiddenCount < cellsToHide) {
-    const r = getRandomInt(0, size - 1);
-    const c = getRandomInt(0, size - 1);
-    if (newGrid[r][c] !== CELL_EMPTY) {
-      newGrid[r][c] = CELL_EMPTY;
-      hiddenCount++;
+  while (hidden < cellsToHide) {
+    const r = getRandomInt(0, gameState.size - 1);
+    const c = getRandomInt(0, gameState.size - 1);
+    if (board[r][c] !== CELL_EMPTY) {
+      board[r][c] = CELL_EMPTY;
+      hidden += 1;
     }
   }
 
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      if (newGrid[r][c] !== CELL_EMPTY) {
-        newInitialGrid[r][c] = newGrid[r][c];
-      }
-    }
-  }
-
-  gameState.grid = newGrid;
-  gameState.initialGrid = newInitialGrid;
+  gameState.grid = board;
+  gameState.initialGrid = board.map((row) => row.slice());
   renderGrid();
   updateStatus();
   startTimer();
 }
 
-/**
- * Handle cell click
- */
-function handleCellClick(r, c) {
-  if (gameState.initialGrid[r][c] !== CELL_EMPTY) return;
-
-  gameState.selectedCell = { r, c };
-  const oldValue = gameState.grid[r][c];
-  const newValue = (oldValue + 1) % 3;
-  gameState.grid[r][c] = newValue;
-  recordMove(r, c, newValue);
-  updateGame();
-}
-
-/**
- * Update game state after cell change
- */
 function updateGame() {
-  const size = gameState.size;
-  const grid = gameState.grid;
-
-  let allCellsFilled = true;
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      if (grid[r][c] === CELL_EMPTY) {
-        allCellsFilled = false;
-        break;
-      }
-    }
-    if (!allCellsFilled) break;
-  }
-
-  const { violations, hasViolations } = checkViolations(grid, size);
+  const { violations, hasViolations } = checkViolations(gameState.grid, gameState.size);
   gameState.violations = violations;
   gameState.hasViolations = hasViolations;
-  gameState.isSolved = allCellsFilled && !hasViolations;
-
-  // Clear any pending feedback timeout
-  if (gameState.feedbackTimeout) {
-    clearTimeout(gameState.feedbackTimeout);
-    gameState.feedbackTimeout = null;
-  }
+  gameState.isSolved = gameState.grid.every((row) => row.every((cell) => cell !== CELL_EMPTY)) && !hasViolations;
 
   if (hasViolations) {
-    // Render grid without violations visible first
-    renderGridWithoutViolations();
-    updateStatusWithDelay();
+    renderGrid();
+    const statusEl = document.getElementById('status-message');
+    statusEl.textContent = translations[gameState.currentLanguage].violationMessage;
+    statusEl.className = 'status-message warning';
+    statusEl.classList.remove('hidden');
+    const live = document.getElementById('sr-live');
+    if (live) live.textContent = translations[gameState.currentLanguage].violationMessage;
   } else {
     renderGrid();
     updateStatus();
   }
 }
 
-/**
- * Render grid without showing violations
- */
-function renderGridWithoutViolations() {
-  const gridElement = document.getElementById("game-grid");
-  const size = gameState.size;
-  gridElement.innerHTML = "";
-  gridElement.style.gridTemplateColumns = `repeat(${size}, var(--cell-size))`;
+function handleCellClick(r, c) {
+  if (gameState.initialGrid[r][c] !== CELL_EMPTY) return;
 
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      const cell = document.createElement("div");
-      cell.className = "cell";
-      cell.id = `cell-${r}-${c}`;
-      cell.setAttribute("data-row", r);
-      cell.setAttribute("data-col", c);
-      cell.setAttribute("tabindex", "0");
-      cell.setAttribute("aria-label", `Row ${r + 1}, Column ${c + 1}`);
-
-      if (gameState.initialGrid[r][c] !== CELL_EMPTY) {
-        cell.classList.add("locked");
-        cell.setAttribute("aria-label", `Row ${r + 1}, Column ${c + 1}, Locked`);
-      }
-
-      if (
-        gameState.selectedCell &&
-        gameState.selectedCell.r === r &&
-        gameState.selectedCell.c === c
-      ) {
-        cell.classList.add("selected");
-      }
-
-      const cellValue = gameState.grid[r][c];
-      if (cellValue === CELL_RED) {
-        const circle = document.createElement("div");
-        circle.className = "circle red";
-        cell.appendChild(circle);
-        cell.setAttribute("aria-label", cell.getAttribute("aria-label") + ", Red");
-      } else if (cellValue === CELL_BLUE) {
-        const circle = document.createElement("div");
-        circle.className = "circle blue";
-        cell.appendChild(circle);
-        cell.setAttribute("aria-label", cell.getAttribute("aria-label") + ", Blue");
-      }
-
-      cell.addEventListener("click", () => handleCellClick(r, c));
-      gridElement.appendChild(cell);
-    }
-  }
+  const previousValue = gameState.grid[r][c];
+  const nextValue = (previousValue + 1) % 3;
+  gameState.selectedCell = { r, c };
+  gameState.moveHistory.push({ r, c, oldValue: previousValue, newValue: nextValue });
+  gameState.grid[r][c] = nextValue;
+  updateGame();
 }
 
-/**
- * Update status with delayed feedback
- */
-function updateStatusWithDelay() {
-  const statusElement = document.getElementById("status-message");
-  const t = translations[gameState.currentLanguage];
+function undoLastMove() {
+  if (gameState.moveHistory.length === 0) return;
+  const last = gameState.moveHistory.pop();
+  if (!last) return;
+  if (gameState.initialGrid[last.r][last.c] !== CELL_EMPTY) return;
 
-  // Show warning message immediately
-  statusElement.textContent = t.violationMessage;
-  statusElement.classList.remove("hidden");
-  statusElement.className = "status-message warning";
-
-  // Delay visual feedback and hints by 1 second
-  gameState.feedbackTimeout = setTimeout(() => {
-    renderGrid();
-    const hints = generateHints();
-    displayHints(hints);
-  }, 1000);
+  gameState.grid[last.r][last.c] = last.oldValue;
+  gameState.selectedCell = { r: last.r, c: last.c };
+  updateGame();
 }
 
-/**
- * Reset current game
- */
-function resetGame() {
-  const size = gameState.size;
-
-  // Clear any pending feedback timeout
-  if (gameState.feedbackTimeout) {
-    clearTimeout(gameState.feedbackTimeout);
-    gameState.feedbackTimeout = null;
-  }
-
-  gameState.grid = JSON.parse(JSON.stringify(gameState.initialGrid));
-  gameState.isSolved = false;
-  gameState.hasViolations = false;
-  gameState.startTime = Date.now();
-  gameState.elapsedTime = 0;
-  gameState.violations = {
-    rows: Array(size).fill(false),
-    cols: Array(size).fill(false),
-    cells: Array(size)
-      .fill(0)
-      .map(() => Array(size).fill(false)),
-  };
-  renderGrid();
-  updateStatus();
-}
-
-/**
- * Render the game grid
- */
 function renderGrid() {
-  const gridElement = document.getElementById("game-grid");
-  const size = gameState.size;
-  gridElement.innerHTML = "";
-  gridElement.style.gridTemplateColumns = `repeat(${size}, var(--cell-size))`;
+  const gridEl = document.getElementById('game-grid');
+  gridEl.innerHTML = '';
+  gridEl.style.gridTemplateColumns = `repeat(${gameState.size}, var(--cell-size))`;
 
-  for (let r = 0; r < size; r++) {
-    for (let c = 0; c < size; c++) {
-      const cell = document.createElement("div");
-      cell.className = "cell";
+  for (let r = 0; r < gameState.size; r++) {
+    for (let c = 0; c < gameState.size; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
       cell.id = `cell-${r}-${c}`;
-      cell.setAttribute("data-row", r);
-      cell.setAttribute("data-col", c);
-      cell.setAttribute("tabindex", "0");
-      cell.setAttribute("aria-label", `Row ${r + 1}, Column ${c + 1}`);
+      cell.setAttribute('data-row', String(r));
+      cell.setAttribute('data-col', String(c));
+      cell.setAttribute('tabindex', '0');
+      cell.setAttribute('role', 'button');
+      cell.setAttribute('aria-label', `Row ${r + 1}, Column ${c + 1}`);
 
       if (gameState.initialGrid[r][c] !== CELL_EMPTY) {
-        cell.classList.add("locked");
-        cell.setAttribute("aria-label", `Row ${r + 1}, Column ${c + 1}, Locked`);
+        cell.classList.add('locked');
       }
 
-      if (gameState.violations.rows[r] || gameState.violations.cols[c]) {
-        cell.classList.add("violation");
+      if (gameState.selectedCell && gameState.selectedCell.r === r && gameState.selectedCell.c === c) {
+        cell.classList.add('selected');
       }
 
-      if (gameState.violations.cells[r][c]) {
-        cell.style.borderColor = "var(--orange2)";
+      if (gameState.violations.rows[r] || gameState.violations.cols[c] || gameState.violations.cells[r][c]) {
+        cell.classList.add('violation');
       }
 
-      if (
-        gameState.selectedCell &&
-        gameState.selectedCell.r === r &&
-        gameState.selectedCell.c === c
-      ) {
-        cell.classList.add("selected");
-      }
-
-      const cellValue = gameState.grid[r][c];
-      if (cellValue === CELL_RED) {
-        const circle = document.createElement("div");
-        circle.className = "circle red";
+      const value = gameState.grid[r][c];
+      if (value === CELL_RED) {
+        const circle = document.createElement('div');
+        circle.className = 'circle red';
         cell.appendChild(circle);
-        cell.setAttribute("aria-label", cell.getAttribute("aria-label") + ", Red");
-      } else if (cellValue === CELL_BLUE) {
-        const circle = document.createElement("div");
-        circle.className = "circle blue";
+        cell.setAttribute('aria-label', `${cell.getAttribute('aria-label')}, Red`);
+      } else if (value === CELL_BLUE) {
+        const circle = document.createElement('div');
+        circle.className = 'circle blue';
         cell.appendChild(circle);
-        cell.setAttribute("aria-label", cell.getAttribute("aria-label") + ", Blue");
+        cell.setAttribute('aria-label', `${cell.getAttribute('aria-label')}, Blue`);
+      } else {
+        cell.setAttribute('aria-label', `${cell.getAttribute('aria-label')}, Empty`);
       }
 
-      cell.addEventListener("click", () => handleCellClick(r, c));
-      gridElement.appendChild(cell);
+      cell.addEventListener('click', () => handleCellClick(r, c));
+      cell.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          handleCellClick(r, c);
+        }
+      });
+      gridEl.appendChild(cell);
     }
   }
 }
 
-/**
- * Update status message
- */
-function updateStatus() {
-  const statusElement = document.getElementById("status-message");
+function updateStatsDisplay() {
+  const stats = gameState.stats;
+  document.getElementById('games-played').textContent = stats.gamesPlayed;
+  document.getElementById('games-won').textContent = stats.gamesWon;
+  document.getElementById('best-time').textContent = stats.bestTime ? `${stats.bestTime}s` : '-';
+
+  const note = document.getElementById('stats-storage-note');
+  if (!note) return;
+  if (!gameState.storageAvailable) {
+    note.textContent = translations[gameState.currentLanguage].storageUnavailable;
+    note.classList.remove('hidden');
+  } else {
+    note.textContent = '';
+    note.classList.add('hidden');
+  }
+}
+
+function updateLanguageUI() {
   const t = translations[gameState.currentLanguage];
 
-  statusElement.classList.add("hidden");
+  document.title = t.title;
+  document.getElementById('title').textContent = t.title;
+  document.getElementById('settings-title').textContent = t.settings;
+  document.getElementById('language-label').textContent = t.language;
+  document.getElementById('label-size').textContent = t.size;
+  document.getElementById('label-difficulty').textContent = t.difficulty;
+  document.getElementById('opt-easy').textContent = t.easy;
+  document.getElementById('opt-medium').textContent = t.medium;
+  document.getElementById('opt-hard').textContent = t.hard;
+  document.getElementById('new-game-btn').textContent = t.newGame;
+  document.getElementById('reset-btn').textContent = t.reset;
+  document.getElementById('undo-btn').textContent = t.undo;
+  document.getElementById('rules-title').textContent = t.howToPlayTitle;
+  document.getElementById('instructions').textContent = t.instructions;
+  document.getElementById('stat-games-played').textContent = t.gamesPlayed;
+  document.getElementById('stat-games-won').textContent = t.gamesWon;
+  document.getElementById('stat-best-time').textContent = t.bestTime;
+  document.getElementById('language-select').value = gameState.currentLanguage;
+  const resetStatsBtn = document.getElementById('reset-stats-btn');
+  if (resetStatsBtn) resetStatsBtn.textContent = t.resetStats;
 
-  // Clear any pending feedback timeout
-  if (gameState.feedbackTimeout) {
-    clearTimeout(gameState.feedbackTimeout);
-    gameState.feedbackTimeout = null;
+  const rulesListEl = document.getElementById('rules-list');
+  if (rulesListEl) {
+    rulesListEl.innerHTML = t.rules.map((ruleText) => `<li>${ruleText}</li>`).join('');
   }
+
+  updateStatsDisplay();
+}
+
+function updateStatus() {
+  const statusEl = document.getElementById('status-message');
+  const liveEl = document.getElementById('sr-live');
+  statusEl.classList.add('hidden');
 
   if (gameState.isSolved) {
     stopTimer();
     gameState.elapsedTime = Date.now() - gameState.startTime;
-    const formattedTime = formatTime(gameState.elapsedTime);
+    const seconds = formatTime(gameState.elapsedTime);
 
     gameState.stats = loadStats();
-    gameState.stats.gamesWon++;
-    if (!gameState.stats.bestTime || formattedTime < gameState.stats.bestTime) {
-      gameState.stats.bestTime = formattedTime;
+    gameState.stats.gamesWon += 1;
+    if (!gameState.stats.bestTime || seconds < gameState.stats.bestTime) {
+      gameState.stats.bestTime = seconds;
     }
     saveStats(gameState.stats);
     updateStatsDisplay();
 
-    const messageTemplate = t.solvedMessageWithTime || t.solvedMessage;
-    const message = messageTemplate.includes("{time}")
-      ? messageTemplate.replace("{time}", formattedTime)
-      : t.solvedMessage;
-    statusElement.textContent = message;
-    statusElement.classList.remove("hidden");
-    statusElement.className = "status-message success";
-    document.getElementById("hints-container").classList.add("hidden");
+    const message = translations[gameState.currentLanguage].solvedMessageWithTime.replace('{time}', String(seconds));
+    statusEl.textContent = message;
+    statusEl.className = 'status-message success';
+    statusEl.classList.remove('hidden');
+    if (liveEl) liveEl.textContent = message;
   } else {
-    document.getElementById("hints-container").classList.add("hidden");
+    if (liveEl) liveEl.textContent = '';
   }
 }
 
-/**
- * Update UI text based on language
- */
-function updateLanguageUI() {
-  const t = translations[gameState.currentLanguage];
+function getStoredLanguage() {
+  if (!storageAvailable()) return 'zh-tw';
 
-  document.getElementById("title").textContent = t.title;
-  document.getElementById("label-size").textContent = t.size;
-  document.getElementById("label-difficulty").textContent = t.difficulty;
-  document.getElementById("opt-easy").textContent = t.easy;
-  document.getElementById("opt-medium").textContent = t.medium;
-  document.getElementById("opt-hard").textContent = t.hard;
-  document.getElementById("new-game-btn").textContent = t.newGame;
-  document.getElementById("reset-btn").textContent = t.reset;
-  document.getElementById("undo-btn").textContent = t.undo;
-  document.getElementById("rules-title").textContent = t.howToPlayTitle;
-  document.getElementById("instructions").textContent = t.instructions;
-  document.getElementById("stat-games-played").textContent = t.gamesPlayed;
-  document.getElementById("stat-games-won").textContent = t.gamesWon;
-  document.getElementById("stat-best-time").textContent = t.bestTime;
+  try {
+    const savedLanguage = window.localStorage.getItem('puzzleLanguage');
+    return savedLanguage && translations[savedLanguage] ? savedLanguage : 'zh-tw';
+  } catch (error) {
+    return 'zh-tw';
+  }
 }
 
-/**
- * Update stats display
- */
-function updateStatsDisplay() {
-  const stats = gameState.stats;
-  document.getElementById("games-played").textContent = stats.gamesPlayed;
-  document.getElementById("games-won").textContent = stats.gamesWon;
-  document.getElementById("best-time").textContent = stats.bestTime ? `${stats.bestTime}s` : "-";
-}
-
-/**
- * Setup event listeners
- */
 function setupEventListeners() {
-  document.getElementById("language-select").addEventListener("change", (e) => {
-    gameState.currentLanguage = e.target.value;
+  document.getElementById('language-select').addEventListener('change', (event) => {
+    gameState.currentLanguage = event.target.value;
+    if (gameState.storageAvailable) {
+      try {
+        window.localStorage.setItem('puzzleLanguage', gameState.currentLanguage);
+      } catch (error) {
+        console.warn('Failed to save puzzle language:', error);
+      }
+    }
     updateLanguageUI();
+    renderGrid();
   });
 
-  document.getElementById("puzzle-size").addEventListener("change", (e) => {
-    gameState.size = parseInt(e.target.value);
+  document.getElementById('puzzle-size').addEventListener('change', (event) => {
+    gameState.size = Number(event.target.value);
     generatePuzzle();
   });
 
-  document
-    .getElementById("puzzle-difficulty")
-    .addEventListener("change", (e) => {
-      gameState.difficulty = e.target.value;
-      generatePuzzle();
-    });
+  document.getElementById('puzzle-difficulty').addEventListener('change', (event) => {
+    gameState.difficulty = event.target.value;
+    generatePuzzle();
+  });
 
-  document
-    .getElementById("new-game-btn")
-    .addEventListener("click", generatePuzzle);
-  document.getElementById("reset-btn").addEventListener("click", resetGame);
-  document.getElementById("undo-btn").addEventListener("click", undoLastMove);
+  document.getElementById('new-game-btn').addEventListener('click', generatePuzzle);
+  document.getElementById('reset-btn').addEventListener('click', () => {
+    if (gameState.initialGrid.length === 0) return;
+    gameState.grid = gameState.initialGrid.map((row) => row.slice());
+    gameState.moveHistory = [];
+    gameState.selectedCell = null;
+    gameState.hasViolations = false;
+    gameState.isSolved = false;
+    gameState.startTime = Date.now();
+    updateGame();
+    startTimer();
+  });
 
-  // Keyboard support
-  document.addEventListener("keydown", (e) => {
+  document.getElementById('undo-btn').addEventListener('click', undoLastMove);
+
+  document.getElementById('reset-stats-btn').addEventListener('click', () => {
+    gameState.stats = { gamesPlayed: 0, gamesWon: 0, bestTime: null };
+    saveStats(gameState.stats);
+    updateStatsDisplay();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    const activeElement = document.activeElement;
+    if (activeElement && activeElement.tagName === 'SELECT') return;
+
     if (!gameState.selectedCell) {
       gameState.selectedCell = { r: 0, c: 0 };
     }
@@ -994,57 +656,68 @@ function setupEventListeners() {
     const { r, c } = gameState.selectedCell;
     const size = gameState.size;
 
-    switch (e.key) {
-      case "ArrowUp":
-        e.preventDefault();
-        gameState.selectedCell.r = (r - 1 + size) % size;
+    switch (event.key) {
+      case 'ArrowUp':
+        event.preventDefault();
+        gameState.selectedCell = { r: (r - 1 + size) % size, c };
         renderGrid();
         break;
-      case "ArrowDown":
-        e.preventDefault();
-        gameState.selectedCell.r = (r + 1) % size;
+      case 'ArrowDown':
+        event.preventDefault();
+        gameState.selectedCell = { r: (r + 1) % size, c };
         renderGrid();
         break;
-      case "ArrowLeft":
-        e.preventDefault();
-        gameState.selectedCell.c = (c - 1 + size) % size;
+      case 'ArrowLeft':
+        event.preventDefault();
+        gameState.selectedCell = { r, c: (c - 1 + size) % size };
         renderGrid();
         break;
-      case "ArrowRight":
-        e.preventDefault();
-        gameState.selectedCell.c = (c + 1) % size;
+      case 'ArrowRight':
+        event.preventDefault();
+        gameState.selectedCell = { r, c: (c + 1) % size };
         renderGrid();
         break;
-      case "0":
-      case "1":
-      case "2":
-        e.preventDefault();
-        if (gameState.initialGrid[r][c] === CELL_EMPTY) {
-          gameState.grid[r][c] = parseInt(e.key);
-          recordMove(r, c, parseInt(e.key));
+      case 'Enter':
+      case ' ':
+        event.preventDefault();
+        if (gameState.initialGrid[r] && gameState.initialGrid[r][c] === CELL_EMPTY) {
+          handleCellClick(r, c);
+        }
+        break;
+      case '0':
+      case '1':
+      case '2': {
+        event.preventDefault();
+        const value = Number(event.key);
+        if (gameState.initialGrid[r] && gameState.initialGrid[r][c] === CELL_EMPTY && gameState.grid[r][c] !== value) {
+          gameState.moveHistory.push({ r, c, oldValue: gameState.grid[r][c], newValue: value });
+          gameState.grid[r][c] = value;
           updateGame();
         }
         break;
-      case "z":
-      case "Z":
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault();
+      }
+      case 'z':
+      case 'Z':
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
           undoLastMove();
         }
+        break;
+      default:
         break;
     }
   });
 }
 
-/**
- * Initialize the game
- */
 function initGame() {
-  setupEventListeners();
   gameState.stats = loadStats();
+  gameState.currentLanguage = getStoredLanguage();
+  updateLanguageUI();
   updateStatsDisplay();
+  setupEventListeners();
   generatePuzzle();
 }
 
-// Start the game when the page loads
-window.onload = initGame;
+if (typeof window !== 'undefined') {
+  window.addEventListener('load', initGame);
+}
