@@ -1,157 +1,61 @@
-# 二進制拼圖 - 紅藍 | Binary Puzzle - Red and Blue
+# Binary Puzzle - Red and Blue | 二進制拼圖 - 紅藍
 
-一個基於網頁的二進制拼圖遊戲，支援多種語言和難度設定。
+A simple web game. Fill the grid with red and blue circles following three rules.
 
-A web-based binary puzzle game with multi-language support and difficulty settings.
+一個簡單的網頁遊戲。用紅色和藍色圓圈填滿網格，遵守三條規則。
 
-## 🎮 遊戲特色 | Game Features
+## Rules | 規則
 
-- **多語言支援**：繁體中文、簡體中文、英文
-- **多種網格大小**：4x4、6x6、8x8、10x10
-- **三種難度**：簡單、中等、困難
-- **即時規則檢查**：高亮顯示違規區域
-- **響應式設計**：支援桌面和行動裝置
-- **計時功能**：記錄完成時間
+1. No three same colors in a row (horizontally or vertically).
+   任何行或列中，不能有三個相同顏色相鄰。
+2. A full row or column must have equal red and blue (even-sized grids only).
+   填滿時，每行每列的紅藍數量必須相等（僅適用於偶數大小網格）。
+3. All rows and all columns must be unique.
+   所有行和列都不能重複。
 
-- **Multi-language support**: Traditional Chinese, Simplified Chinese, English
-- **Multiple grid sizes**: 4x4, 6x6, 8x8, 10x10
-- **Three difficulty levels**: Easy, Medium, Hard
-- **Real-time rule checking**: Highlights violations
-- **Responsive design**: Works on desktop and mobile devices
-- **Timer feature**: Records completion time
+## How to play | 操作方式
 
-## 🎯 遊戲規則 | Game Rules
+- Click a cell to cycle: Empty → Red → Blue → Empty.
+  點擊格子循環切換：空白 → 紅色 → 藍色 → 空白。
+- Or select with arrow keys, then press `1` (Red), `2` (Blue), `0` (Empty).
+  或用方向鍵選擇，再按 `1`（紅）、`2`（藍）、`0`（空白）。
+- `Ctrl+Z` or the Undo button reverses your last move.
+  `Ctrl+Z` 或「復原」按鈕可還原上一步。
+- Gray cells are locked (the starting puzzle). Red highlights show rule violations.
+  灰色格子是鎖定的初始拼圖。紅色高亮表示違規。
 
-### 基本規則 | Basic Rules
+## Features | 特色
 
-1. 將每個空格填入紅色或藍色圓圈
-   - Fill each empty cell with a red or blue circle
+- 3 languages: 繁體中文 / 简体中文 / English
+- Grid sizes: 4x4, 6x6, 8x8, 10x10
+- Difficulties: Easy, Medium, Hard
+- Live rule checking, hints, timer, stats (saved in your browser)
+- Keyboard and screen-reader friendly
 
-2. 任何行或列中，不能有超過兩個相同顏色的相鄰圓圈
-   - No more than two adjacent circles of the same color in any row or column
+## Quick start | 快速開始
 
-3. 每個行和每個列必須包含相同數量的紅色和藍色圓圈（僅適用於偶數大小網格）
-   - Each row and column must contain equal numbers of red and blue circles (only for even-sized grids)
+Just open `index.html` in a browser. Or serve the folder:
 
-4. 所有行必須是唯一的，不能有完全相同的模式
-   - All rows must be unique, no identical patterns
-
-5. 所有列必須是唯一的，不能有完全相同的模式
-   - All columns must be unique, no identical patterns
-
-### 操作方式 | How to Play
-
-- 點擊空格切換狀態：空白 → 紅色 → 藍色 → 空白
-  - Click empty cells to cycle: Empty → Red → Blue → Empty
-- 灰色背景的方塊是初始拼圖，無法更改
-  - Gray background squares are part of the initial puzzle and cannot be changed
-- 高亮區域表示規則違規
-  - Highlighted areas indicate rule violations
-
-## 🚀 快速開始 | Quick Start
-
-### 方法一：直接開啟 | Method 1: Direct Open
-
-1. 下載整個專案資料夾
-   - Download the entire project folder
-2. 雙擊 `index.html` 在瀏覽器中開啟
-   - Double-click `index.html` to open in browser
-
-### 方法二：本地伺服器 | Method 2: Local Server
+直接雙擊開啟 `index.html`。或啟動本地伺服器：
 
 ```bash
-# 使用 Python | Using Python
 python -m http.server 8000
-
-# 使用 Node.js | Using Node.js
-npx serve .
-
-# 然後訪問 | Then visit
-http://localhost:8000
+# then visit | 然後訪問 http://localhost:8000
 ```
 
-## 📁 專案結構 | Project Structure
+## Tests | 測試
 
-```
-Binary Puzzle/
-├── index.html          # 主頁面 | Main page
-├── css/
-│   └── style.css      # 樣式表 | Stylesheet
-├── js/
-│   └── main.js        # 遊戲邏輯 | Game logic
-└── README.md          # 說明文件 | Documentation
+```bash
+node tests/validator-test.js
 ```
 
-## 🛠️ 技術實現 | Technical Implementation
+## Project structure | 專案結構
 
-- **前端技術**：HTML5、CSS3、JavaScript (ES6+)
-- **設計特色**：響應式佈局、現代化 UI、流暢動畫
-- **演算法**：回溯法生成拼圖、實時規則驗證
-- **國際化**：完整的多語言支援系統
-
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **Design**: Responsive layout, modern UI, smooth animations
-- **Algorithms**: Backtracking for puzzle generation, real-time rule validation
-- **Internationalization**: Complete multi-language support system
-
-## 🎨 自訂與擴展 | Customization & Extension
-
-### 新增語言 | Adding Languages
-
-在 `js/main.js` 的 `translations` 物件中新增語言包：
-Add language pack in `translations` object in `js/main.js`:
-
-```javascript
-const translations = {
-  // 現有語言...
-  "your-lang-code": {
-    languageName: "Your Language",
-    title: "Binary Puzzle - Red & Blue",
-    // ... 其他翻譯
-  },
-};
+```text
+├── index.html          # Page | 頁面
+├── css/style.css       # Styles | 樣式
+├── js/main.js          # Game logic | 遊戲邏遊戲邏輯
+└── tests/validator-test.js  # Rule tests | 規則測試
 ```
 
-### 調整難度 | Adjusting Difficulty
-
-修改 `js/main.js` 中的難度參數：
-Modify difficulty parameters in `js/main.js`:
-
-```javascript
-// 調整初始填充比例 | Adjust initial fill ratio
-const difficultySettings = {
-  easy: 0.4, // 40% 預填充 | 40% pre-filled
-  medium: 0.3, // 30% 預填充 | 30% pre-filled
-  hard: 0.2, // 20% 預填充 | 20% pre-filled
-};
-```
-
-## 🤝 貢獻 | Contributing
-
-歡迎提交 Issue 和 Pull Request！
-Issues and Pull Requests are welcome!
-
-1. Fork 此專案 | Fork this project
-2. 建立功能分支 | Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. 提交變更 | Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 | Push to branch (`git push origin feature/AmazingFeature`)
-5. 開啟 Pull Request | Open Pull Request
-
-## 📄 授權 | License
-
-此專案採用 MIT 授權條款。
-This project is licensed under the MIT License.
-
-## 🙏 致謝 | Acknowledgments
-
-- 感謝所有測試玩家的回饋
-- 靈感來源於經典的二進制拼圖遊戲
-- 使用現代網頁技術實現流暢體驗
-
-- Thanks to all testing players for feedback
-- Inspired by classic binary puzzle games
-- Built with modern web technologies for smooth experience
-
----
-
-**享受遊戲！| Enjoy the game! 🎮**
+License | 授權: MIT
